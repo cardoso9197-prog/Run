@@ -1,0 +1,541 @@
+/**
+ * Run Run Backend Server
+ * Main server file for Guinea-Bissau ride sharing platform
+ * Developer: Edivaldo Cardoso
+ * Email: suporte@runrungb.com
+ */
+
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error(error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const cors = require('cors');
+require('dotenv').config();
+
+const { pool } = require('./database/db');
+const authRoutes = require('./routes/auth');
+const rideRoutes = require('./routes/rides');
+const driverRoutes = require('./routes/drivers');
+const passengerRoutes = require('./routes/passengers');
+const paymentRoutes = require('./routes/payments');
+const { authenticateToken } = require('./middleware/auth');
+
+// Initialize Express app
+const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = socketIo(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  },
+  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
+  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Run Run API Server',
+    version: '1.0.0',
+    status: 'running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    // Check database connection
+    await pool.query('SELECT 1');
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+    });
+  }
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/rides', authenticateToken, rideRoutes);
+app.use('/api/drivers', authenticateToken, driverRoutes);
+app.use('/api/passengers', authenticateToken, passengerRoutes);
+app.use('/api/payments', authenticateToken, paymentRoutes);
+
+// ==========================================
+// WebSocket Connection Management
+// ==========================================
+
+// Store active connections
+const activeConnections = {
+  passengers: new Map(), // passengerId -> socket
+  drivers: new Map(),    // driverId -> socket
+};
+
+io.on('connection', (socket) => {
+  console.log(`✅ Client connected: ${socket.id}`);
+
+  // Driver goes online
+  socket.on('driver:online', async (data) => {
+    const { driverId, latitude, longitude } = data;
+    console.log(`🚗 Driver ${driverId} went online`);
+
+    // Store driver socket
+    activeConnections.drivers.set(driverId, socket.id);
+    socket.driverId = driverId;
+
+    // Update driver status in database
+    try {
+      await pool.query(
+        'UPDATE drivers SET status = $1 WHERE id = $2',
+        ['online', driverId]
+      );
+
+      // Update driver location
+      await pool.query(
+        'INSERT INTO driver_locations (driver_id, latitude, longitude) VALUES ($1, $2, $3)',
+        [driverId, latitude, longitude]
+      );
+
+      socket.emit('driver:status', { status: 'online' });
+    } catch (error) {
+      console.error('Error updating driver status:', error);
+    }
+  });
+
+  // Driver goes offline
+  socket.on('driver:offline', async (data) => {
+    const { driverId } = data;
+    console.log(`🚗 Driver ${driverId} went offline`);
+
+    // Remove driver socket
+    activeConnections.drivers.delete(driverId);
+
+    // Update driver status in database
+    try {
+      await pool.query(
+        'UPDATE drivers SET status = $1 WHERE id = $2',
+        ['offline', driverId]
+      );
+
+      socket.emit('driver:status', { status: 'offline' });
+    } catch (error) {
+      console.error('Error updating driver status:', error);
+    }
+  });
+
+  // Driver location update
+  socket.on('driver:location', async (data) => {
+    const { driverId, latitude, longitude, heading, speed, accuracy } = data;
+
+    try {
+      // Update driver location in database
+      await pool.query(
+        'INSERT INTO driver_locations (driver_id, latitude, longitude, heading, speed, accuracy) VALUES ($1, $2, $3, $4, $5, $6)',
+        [driverId, latitude, longitude, heading, speed, accuracy]
+      );
+
+      // If driver has an active ride, broadcast location to passenger
+      const rideResult = await pool.query(
+        'SELECT passenger_id FROM rides WHERE driver_id = $1 AND status IN ($2, $3, $4)',
+        [driverId, 'accepted', 'arrived', 'started']
+      );
+
+      if (rideResult.rows.length > 0) {
+        const passengerId = rideResult.rows[0].passenger_id;
+        const passengerSocketId = activeConnections.passengers.get(passengerId);
+        
+        if (passengerSocketId) {
+          io.to(passengerSocketId).emit('ride:driver_location', {
+            latitude,
+            longitude,
+            heading,
+            speed,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating driver location:', error);
+    }
+  });
+
+  // Passenger connects
+  socket.on('passenger:connect', (data) => {
+    const { passengerId } = data;
+    console.log(`👤 Passenger ${passengerId} connected`);
+    activeConnections.passengers.set(passengerId, socket.id);
+    socket.passengerId = passengerId;
+  });
+
+  // Ride request from passenger
+  socket.on('ride:request', async (data) => {
+    const { rideId } = data;
+    console.log(`📞 Ride request ${rideId}`);
+
+    try {
+      // Get ride details
+      const rideResult = await pool.query(
+        'SELECT * FROM rides WHERE id = $1',
+        [rideId]
+      );
+
+      if (rideResult.rows.length === 0) {
+        return socket.emit('ride:error', { message: 'Ride not found' });
+      }
+
+      const ride = rideResult.rows[0];
+
+      // Find nearby available drivers
+      const driversResult = await pool.query(`
+        SELECT d.id, d.name, d.average_rating, dl.latitude, dl.longitude,
+               (6371 * acos(cos(radians($1)) * cos(radians(dl.latitude)) * 
+               cos(radians(dl.longitude) - radians($2)) + 
+               sin(radians($1)) * sin(radians(dl.latitude)))) AS distance_km
+        FROM drivers d
+        INNER JOIN driver_locations dl ON d.id = dl.driver_id
+        INNER JOIN vehicles v ON d.vehicle_id = v.id
+        WHERE d.status = 'online'
+          AND v.vehicle_type = $3
+          AND dl.timestamp > NOW() - INTERVAL '2 minutes'
+        HAVING distance_km <= $4
+        ORDER BY distance_km ASC
+        LIMIT 10
+      `, [
+        ride.pickup_latitude,
+        ride.pickup_longitude,
+        ride.vehicle_type,
+        parseFloat(process.env.MAX_MATCHING_RADIUS_KM) || 5
+      ]);
+
+      if (driversResult.rows.length === 0) {
+        return socket.emit('ride:no_drivers', { message: 'No drivers available nearby' });
+      }
+
+      // Send ride request to nearest drivers
+      driversResult.rows.forEach((driver) => {
+        const driverSocketId = activeConnections.drivers.get(driver.id);
+        if (driverSocketId) {
+          io.to(driverSocketId).emit('ride:new_request', {
+            rideId: ride.id,
+            pickupAddress: ride.pickup_address,
+            dropoffAddress: ride.dropoff_address,
+            distance: driver.distance_km,
+            estimatedFare: ride.estimated_fare,
+            passengerRating: 5.0, // TODO: Get from database
+            timeout: 15, // seconds to accept
+          });
+        }
+      });
+
+      socket.emit('ride:searching', { 
+        message: 'Searching for drivers...',
+        nearbyDrivers: driversResult.rows.length 
+      });
+    } catch (error) {
+      console.error('Error processing ride request:', error);
+      socket.emit('ride:error', { message: 'Failed to process ride request' });
+    }
+  });
+
+  // Driver accepts ride
+  socket.on('ride:accept', async (data) => {
+    const { rideId, driverId } = data;
+    console.log(`✅ Driver ${driverId} accepted ride ${rideId}`);
+
+    try {
+      // Update ride status
+      await pool.query(
+        'UPDATE rides SET driver_id = $1, status = $2, accepted_at = NOW() WHERE id = $3 AND status = $4',
+        [driverId, 'accepted', rideId, 'requested']
+      );
+
+      // Update driver status
+      await pool.query(
+        'UPDATE drivers SET status = $1 WHERE id = $2',
+        ['busy', driverId]
+      );
+
+      // Get ride and driver details
+      const rideResult = await pool.query(`
+        SELECT r.*, d.name as driver_name, d.profile_photo_url as driver_photo,
+               d.average_rating as driver_rating, v.make, v.model, v.color, v.license_plate,
+               dl.latitude as driver_latitude, dl.longitude as driver_longitude
+        FROM rides r
+        JOIN drivers d ON r.driver_id = d.id
+        JOIN vehicles v ON d.vehicle_id = v.id
+        LEFT JOIN LATERAL (
+          SELECT latitude, longitude FROM driver_locations 
+          WHERE driver_id = d.id 
+          ORDER BY timestamp DESC LIMIT 1
+        ) dl ON true
+        WHERE r.id = $1
+      `, [rideId]);
+
+      const ride = rideResult.rows[0];
+
+      // Notify passenger
+      const passengerSocketId = activeConnections.passengers.get(ride.passenger_id);
+      if (passengerSocketId) {
+        io.to(passengerSocketId).emit('ride:accepted', {
+          rideId,
+          driver: {
+            id: driverId,
+            name: ride.driver_name,
+            photo: ride.driver_photo,
+            rating: ride.driver_rating,
+            latitude: ride.driver_latitude,
+            longitude: ride.driver_longitude,
+          },
+          vehicle: {
+            make: ride.make,
+            model: ride.model,
+            color: ride.color,
+            licensePlate: ride.license_plate,
+          },
+        });
+      }
+
+      // Confirm to driver
+      socket.emit('ride:accepted_confirmation', { rideId });
+
+      // Notify other drivers that ride was accepted
+      activeConnections.drivers.forEach((socketId, otherDriverId) => {
+        if (otherDriverId !== driverId) {
+          io.to(socketId).emit('ride:taken', { rideId });
+        }
+      });
+    } catch (error) {
+      console.error('Error accepting ride:', error);
+      socket.emit('ride:error', { message: 'Failed to accept ride' });
+    }
+  });
+
+  // Driver arrived at pickup
+  socket.on('ride:arrived', async (data) => {
+    const { rideId } = data;
+    console.log(`🎯 Driver arrived at pickup for ride ${rideId}`);
+
+    try {
+      const result = await pool.query(
+        'UPDATE rides SET status = $1, arrived_at = NOW() WHERE id = $2 RETURNING passenger_id',
+        ['arrived', rideId]
+      );
+
+      if (result.rows.length > 0) {
+        const passengerId = result.rows[0].passenger_id;
+        const passengerSocketId = activeConnections.passengers.get(passengerId);
+        if (passengerSocketId) {
+          io.to(passengerSocketId).emit('ride:driver_arrived', { rideId });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating ride status:', error);
+    }
+  });
+
+  // Ride started
+  socket.on('ride:start', async (data) => {
+    const { rideId } = data;
+    console.log(`🚀 Ride ${rideId} started`);
+
+    try {
+      const result = await pool.query(
+        'UPDATE rides SET status = $1, started_at = NOW() WHERE id = $2 RETURNING passenger_id',
+        ['started', rideId]
+      );
+
+      if (result.rows.length > 0) {
+        const passengerId = result.rows[0].passenger_id;
+        const passengerSocketId = activeConnections.passengers.get(passengerId);
+        if (passengerSocketId) {
+          io.to(passengerSocketId).emit('ride:started', { rideId });
+        }
+      }
+    } catch (error) {
+      console.error('Error starting ride:', error);
+    }
+  });
+
+  // Ride completed
+  socket.on('ride:complete', async (data) => {
+    const { rideId, actualDistance, actualDuration } = data;
+    console.log(`🏁 Ride ${rideId} completed`);
+
+    try {
+      const result = await pool.query(
+        'UPDATE rides SET status = $1, completed_at = NOW(), actual_distance_km = $2, actual_duration_minutes = $3 WHERE id = $4 RETURNING passenger_id, driver_id, final_fare',
+        ['completed', rideId, actualDistance, actualDuration]
+      );
+
+      if (result.rows.length > 0) {
+        const ride = result.rows[0];
+
+        // Update driver status
+        await pool.query(
+          'UPDATE drivers SET status = $1 WHERE id = $2',
+          ['online', ride.driver_id]
+        );
+
+        // Notify passenger
+        const passengerSocketId = activeConnections.passengers.get(ride.passenger_id);
+        if (passengerSocketId) {
+          io.to(passengerSocketId).emit('ride:completed', {
+            rideId,
+            fare: ride.final_fare,
+            distance: actualDistance,
+            duration: actualDuration,
+          });
+        }
+
+        // Notify driver
+        socket.emit('ride:completed_confirmation', {
+          rideId,
+          fare: ride.final_fare,
+        });
+      }
+    } catch (error) {
+      console.error('Error completing ride:', error);
+    }
+  });
+
+  // Ride cancelled
+  socket.on('ride:cancel', async (data) => {
+    const { rideId, cancelledBy, reason } = data;
+    console.log(`❌ Ride ${rideId} cancelled by ${cancelledBy}`);
+
+    try {
+      const result = await pool.query(
+        'UPDATE rides SET status = $1, cancelled_at = NOW(), cancelled_by = $2, cancellation_reason = $3 WHERE id = $4 RETURNING passenger_id, driver_id',
+        ['cancelled', rideId, cancelledBy, reason]
+      );
+
+      if (result.rows.length > 0) {
+        const ride = result.rows[0];
+
+        // If driver was assigned, set them back to online
+        if (ride.driver_id) {
+          await pool.query(
+            'UPDATE drivers SET status = $1 WHERE id = $2',
+            ['online', ride.driver_id]
+          );
+
+          const driverSocketId = activeConnections.drivers.get(ride.driver_id);
+          if (driverSocketId) {
+            io.to(driverSocketId).emit('ride:cancelled', { rideId, cancelledBy, reason });
+          }
+        }
+
+        // Notify passenger
+        const passengerSocketId = activeConnections.passengers.get(ride.passenger_id);
+        if (passengerSocketId) {
+          io.to(passengerSocketId).emit('ride:cancelled', { rideId, cancelledBy, reason });
+        }
+      }
+    } catch (error) {
+      console.error('Error cancelling ride:', error);
+    }
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', async () => {
+    console.log(`❌ Client disconnected: ${socket.id}`);
+
+    // If driver, set to offline
+    if (socket.driverId) {
+      activeConnections.drivers.delete(socket.driverId);
+      try {
+        await pool.query(
+          'UPDATE drivers SET status = $1 WHERE id = $2',
+          ['offline', socket.driverId]
+        );
+      } catch (error) {
+        console.error('Error setting driver offline:', error);
+      }
+    }
+
+    // If passenger, remove from active connections
+    if (socket.passengerId) {
+      activeConnections.passengers.delete(socket.passengerId);
+    }
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined,
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    message: `Route ${req.method} ${req.path} not found`,
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+const HOST = '127.0.0.1';
+
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
+  }
+  process.exit(1);
+});
+
+server.listen(PORT, HOST, () => {
+  console.log('\n🚀 =============================================');
+  console.log(`🚗 Run Run Backend Server`);
+  console.log(`📍 Host: ${HOST}:${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`⏰ Started: ${new Date().toISOString()}`);
+  console.log('🚀 =============================================\n');
+  console.log('Server is ready to accept connections...\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Closing server gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    pool.end(() => {
+      console.log('Database pool closed');
+      process.exit(0);
+    });
+  });
+});
+
+module.exports = { app, io, activeConnections };
