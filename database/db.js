@@ -1,150 +1,110 @@
 /**
- * Run Run - Database Connection Module
- * SQLite database connection using better-sqlite3
- * Developer: Edivaldo Cardoso
+ * Run Run - PostgreSQL Database Connection Module
+ * PostgreSQL database connection for Railway deployment
+ * Office: Run Run Team
+ * Email: suporte@runrungb.com
  */
 
-const Database = require('better-sqlite3');
-const path = require('path');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const dbPath = path.join(__dirname, '..', 'runrun.db');
-const db = new Database(dbPath);
+// Check if we're using Railway's DATABASE_URL or individual config
+const databaseUrl = process.env.DATABASE_URL;
 
-console.log('✅ SQLite database connection established');
-console.log('📁 Database file:', dbPath);
+let pool;
 
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
+if (databaseUrl) {
+  // Railway provides DATABASE_URL automatically when PostgreSQL is added
+  console.log('🔗 Connecting to PostgreSQL using DATABASE_URL');
+  pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: process.env.NODE_ENV === 'production' ? {
+      rejectUnauthorized: false
+    } : false
+  });
+} else {
+  // Fallback to individual environment variables
+  console.log('🔗 Connecting to PostgreSQL using individual config');
+  pool = new Pool({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'runrun',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD,
+    ssl: process.env.NODE_ENV === 'production' ? {
+      rejectUnauthorized: false
+    } : false
+  });
+}
 
-// Wrapper to make it compatible with pg pool interface
-const pool = {
-  query: (text, params = []) => {
-    return new Promise((resolve, reject) => {
-      try {
-        // Convert PostgreSQL $1, $2 style to SQLite ? style
-        let sqliteQuery = text;
-        let sqliteParams = params;
-        
-        // Handle PostgreSQL style parameters
-        const paramMatches = text.match(/\$\d+/g);
-        if (paramMatches) {
-          sqliteQuery = text.replace(/\$\d+/g, '?');
-        }
-        
-        // Handle RETURNING clause (not supported in SQLite)
-        if (sqliteQuery.toUpperCase().includes('RETURNING')) {
-          const returningMatch = sqliteQuery.match(/RETURNING\s+(.+)$/i);
-          sqliteQuery = sqliteQuery.replace(/RETURNING\s+.+$/i, '');
-          
-          if (sqliteQuery.trim().toUpperCase().startsWith('INSERT')) {
-            const stmt = db.prepare(sqliteQuery);
-            const info = stmt.run(...sqliteParams);
-            
-            // Return the inserted row with the ID
-            const tableMatch = sqliteQuery.match(/INSERT INTO\s+(\w+)/i);
-            if (tableMatch) {
-              const selectStmt = db.prepare(`SELECT * FROM ${tableMatch[1]} WHERE id = ?`);
-              const row = selectStmt.get(info.lastInsertRowid);
-              resolve({ rows: [row], rowCount: info.changes });
-            } else {
-              resolve({ rows: [{ id: info.lastInsertRowid }], rowCount: info.changes });
-            }
-          } else if (sqliteQuery.trim().toUpperCase().startsWith('UPDATE')) {
-            const stmt = db.prepare(sqliteQuery);
-            const info = stmt.run(...sqliteParams);
-            resolve({ rows: [], rowCount: info.changes });
-          } else {
-            const stmt = db.prepare(sqliteQuery);
-            const result = stmt.run(...sqliteParams);
-            resolve({ rows: [], rowCount: result.changes });
-          }
-        } else if (sqliteQuery.trim().toUpperCase().startsWith('SELECT')) {
-          const stmt = db.prepare(sqliteQuery);
-          const rows = stmt.all(...sqliteParams);
-          resolve({ rows, rowCount: rows.length });
-        } else if (sqliteQuery.trim().toUpperCase().startsWith('INSERT')) {
-          const stmt = db.prepare(sqliteQuery);
-          const info = stmt.run(...sqliteParams);
-          resolve({ rows: [{ id: info.lastInsertRowid }], rowCount: info.changes });
-        } else if (sqliteQuery.trim().toUpperCase().startsWith('UPDATE') || 
-                   sqliteQuery.trim().toUpperCase().startsWith('DELETE')) {
-          const stmt = db.prepare(sqliteQuery);
-          const info = stmt.run(...sqliteParams);
-          resolve({ rows: [], rowCount: info.changes });
-        } else {
-          // For other queries (CREATE TABLE, etc.)
-          db.exec(sqliteQuery);
-          resolve({ rows: [], rowCount: 0 });
-        }
-      } catch (error) {
-        reject(error);
-      }
-    });
-  },
-  
-  connect: async () => {
-    return {
-      query: pool.query,
-      release: () => {}
-    };
-  },
-  
-  end: () => {
-    db.close();
-  }
-};
+// Test the connection
+pool.query('SELECT NOW()')
+  .then(() => {
+    console.log('✅ PostgreSQL database connection established');
+  })
+  .catch((err) => {
+    console.error('❌ PostgreSQL connection error:', err.message);
+    console.error('💡 Make sure PostgreSQL is running and DATABASE_URL is set');
+  });
+
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('❌ Unexpected PostgreSQL pool error:', err);
+});
 
 /**
  * Execute a SQL query
  * @param {string} text - SQL query text
- * @param {array} params - Query parameters
+ * @param {Array} params - Query parameters
  * @returns {Promise} Query result
  */
 const query = async (text, params) => {
   const start = Date.now();
   try {
-    const res = await pool.query(text, params);
+    const result = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text: text.substring(0, 100), duration, rows: res.rowCount });
-    return res;
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw error;
-  }
-};
-
-/**
- * Get a client from the pool for transactions
- * @returns {Promise} Database client
- */
-const getClient = async () => {
-  return {
-    query: pool.query,
-    release: () => {}
-  };
-};
-
-/**
- * Execute multiple queries in a transaction
- * @param {function} callback - Function containing queries to execute
- * @returns {Promise} Transaction result
- */
-const transaction = async (callback) => {
-  try {
-    await pool.query('BEGIN');
-    const result = await callback({ query: pool.query });
-    await pool.query('COMMIT');
+    console.log('✅ Query executed', { text: text.substring(0, 50), duration, rows: result.rowCount });
     return result;
   } catch (error) {
-    await pool.query('ROLLBACK');
+    console.error('❌ Query error:', error.message);
+    console.error('Query:', text);
+    console.error('Params:', params);
     throw error;
   }
+};
+
+/**
+ * Get a client from the pool (for transactions)
+ * @returns {Promise} PostgreSQL client
+ */
+const getClient = async () => {
+  const client = await pool.connect();
+  const query = client.query;
+  const release = client.release;
+
+  // Set a timeout of 5 seconds, after which we will log this client's last query
+  const timeout = setTimeout(() => {
+    console.error('⚠️ A client has been checked out for more than 5 seconds!');
+  }, 5000);
+
+  // Monkey patch the query method to keep track of the last query executed
+  client.query = (...args) => {
+    client.lastQuery = args;
+    return query.apply(client, args);
+  };
+
+  client.release = () => {
+    clearTimeout(timeout);
+    client.query = query;
+    client.release = release;
+    return release.apply(client);
+  };
+
+  return client;
 };
 
 module.exports = {
-  query,
-  getClient,
-  transaction,
   pool,
+  query,
+  getClient
 };

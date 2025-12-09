@@ -21,7 +21,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
-const { pool } = require('./database/db-postgres');
+const { pool } = require('./database/db');
 const authRoutes = require('./routes/auth');
 const rideRoutes = require('./routes/rides');
 const driverRoutes = require('./routes/drivers');
@@ -506,7 +506,7 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-const HOST = '127.0.0.1';
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 
 server.on('error', (error) => {
   console.error('❌ Server error:', error);
