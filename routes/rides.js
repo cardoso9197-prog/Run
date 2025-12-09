@@ -9,6 +9,7 @@ const { query, transaction } = require('../database/db');
 const { validateRideRequest, validateRating } = require('../middleware/validation');
 const { requirePassenger, requireDriver } = require('../middleware/auth');
 const { calculateFare, calculateDistance } = require('../utils/pricing');
+const { calculateRedZoneSurge } = require('../utils/redZones');
 
 const router = express.Router();
 
@@ -53,7 +54,17 @@ router.post('/request', requirePassenger, validateRideRequest, async (req, res) 
     );
 
     const estimatedDuration = Math.ceil(distance / 0.5); // Assume 30 km/h average speed
-    const fare = calculateFare(distance, estimatedDuration, vehicleType);
+    
+    // Check for red zone surge pricing (30% increase)
+    const redZoneSurge = calculateRedZoneSurge(
+      pickupLatitude,
+      pickupLongitude,
+      dropoffLatitude,
+      dropoffLongitude
+    );
+    
+    const baseFare = calculateFare(distance, estimatedDuration, vehicleType);
+    const fare = Math.round(baseFare * redZoneSurge.multiplier);
 
     // Create ride
     const rideResult = await query(`

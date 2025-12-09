@@ -21,7 +21,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
-const { pool } = require('./database/db');
+const { pool } = require('./database/db-postgres');
 const authRoutes = require('./routes/auth');
 const rideRoutes = require('./routes/rides');
 const driverRoutes = require('./routes/drivers');
