@@ -103,8 +103,29 @@ const getClient = async () => {
   return client;
 };
 
+/**
+ * Execute queries in a transaction
+ * @param {Function} callback - Async function that receives client and executes queries
+ * @returns {Promise} Result from callback
+ */
+const transaction = async (callback) => {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   pool,
   query,
-  getClient
+  getClient,
+  transaction
 };
