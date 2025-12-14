@@ -118,7 +118,7 @@ router.post('/verify-otp', async (req, res) => {
 
     // Check if user exists
     let userResult = await query(
-      'SELECT id, user_type FROM users WHERE phone_number = $1',
+      'SELECT id, user_type FROM users WHERE phone = $1',
       [phoneNumber]
     );
 
@@ -145,7 +145,7 @@ router.post('/verify-otp', async (req, res) => {
       const result = await transaction(async (client) => {
         // Create base user
         const userRes = await client.query(
-          'INSERT INTO users (phone_number, user_type) VALUES ($1, $2) RETURNING id',
+          'INSERT INTO users (phone, user_type) VALUES ($1, $2) RETURNING id',
           [phoneNumber, userType]
         );
         const newUserId = userRes.rows[0].id;
@@ -236,7 +236,7 @@ router.post('/login', async (req, res) => {
 
     // Get user
     const userResult = await query(
-      'SELECT id, user_type FROM users WHERE phone_number = $1',
+      'SELECT id, user_type FROM users WHERE phone = $1',
       [phoneNumber]
     );
 
@@ -315,7 +315,7 @@ router.get('/me', async (req, res) => {
 
     // Get user
     const userResult = await query(
-      'SELECT id, phone_number, user_type FROM users WHERE id = $1',
+      'SELECT id, phone, user_type FROM users WHERE id = $1',
       [decoded.userId]
     );
 
@@ -349,7 +349,7 @@ router.get('/me', async (req, res) => {
       success: true,
       user: {
         id: user.id,
-        phoneNumber: user.phone_number,
+        phoneNumber: user.phone,
         userType: user.user_type,
         profile,
       },

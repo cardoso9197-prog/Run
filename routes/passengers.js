@@ -17,7 +17,7 @@ const router = express.Router();
 router.get('/profile', requirePassenger, async (req, res) => {
   try {
     const result = await query(`
-      SELECT p.*, u.phone_number
+      SELECT p.*, u.phone
       FROM passengers p
       JOIN users u ON p.user_id = u.id
       WHERE p.user_id = $1
