@@ -153,13 +153,13 @@ router.post('/verify-otp', async (req, res) => {
         // Create passenger or driver profile
         if (userType === 'passenger') {
           await client.query(
-            'INSERT INTO passengers (user_id, name) VALUES ($1, $2)',
-            [newUserId, name.trim()]
+            'INSERT INTO passengers (user_id) VALUES ($1)',
+            [newUserId]
           );
         } else if (userType === 'driver') {
           await client.query(
-            'INSERT INTO drivers (user_id, name, license_number) VALUES ($1, $2, $3)',
-            [newUserId, name.trim(), 'TEMP_' + Date.now()] // Temporary license number
+            'INSERT INTO drivers (user_id, license_number) VALUES ($1, $2)',
+            [newUserId, 'TEMP_' + Date.now()] // Temporary license number
           );
         }
 
