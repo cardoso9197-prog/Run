@@ -80,7 +80,8 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phoneNumber, otp, userType, name } = req.body;
+    const { phoneNumber, otp, name } = req.body;
+    let userType = req.body.userType; // Use let so we can reassign it later
 
     if (!phoneNumber || !otp) {
       return res.status(400).json({
