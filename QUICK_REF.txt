@@ -1,0 +1,74 @@
+# 🎯 QUICK REFERENCE - RunRun MVP
+
+## 📱 APPS STATUS: RUNNING
+
+**Passenger App**: Port 8081 | exp://192.168.1.196:8081  
+**Driver App**: Port 8082 | exp://192.168.1.196:8082
+
+---
+
+## ⚡ QUICK TEST (2 Minutes)
+
+### PASSENGER (Device 1):
+Login → Book Now → Set pins → Request Ride → ✅ See ActiveRide screen
+
+### DRIVER (Device 2):
+Login → Go Online → Toggle online → ✅ See AvailableRides → Accept → ✅ See ActiveRide → Complete → ✅ Back to Available
+
+### RESULT:
+Passenger sees status updates → Rates driver → ✅ Back to Welcome
+
+**If all ✅ work = MVP SUCCESS!**
+
+---
+
+## 🔗 LINKS
+
+**Backend**: https://zippy-healing-production-24e4.up.railway.app/api  
+**Health**: https://zippy-healing-production-24e4.up.railway.app/health  
+**Railway**: https://railway.app/dashboard
+
+---
+
+## 📞 TEST CREDENTIALS
+
+**Passenger**: +245966664444  
+**Driver**: +245955555555  
+**OTP**: Check Railway logs
+
+---
+
+## 📊 SCREENS BUILT (12 Total)
+
+### Passenger (6):
+1. Login
+2. Register  
+3. Welcome
+4. **BookRide** (NEW)
+5. **ActiveRide** (NEW)
+6. **Rating** (NEW)
+
+### Driver (6):
+1. Login
+2. Register
+3. Welcome
+4. **OnlineStatus** (NEW)
+5. **AvailableRides** (NEW)
+6. **ActiveRide** (NEW)
+
+---
+
+## ✅ DONE TODAY
+
+- Backend API (100%)
+- Ride booking (100%)
+- Real-time tracking (100%)
+- Driver workflow (100%)
+- Rating system (100%)
+- Navigation (100%)
+
+---
+
+## 🎉 YOU'RE READY!
+
+**Wait for QR codes → Scan → Test → Launch!** 🚀

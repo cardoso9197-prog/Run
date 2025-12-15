@@ -7,6 +7,7 @@
 DROP TABLE IF EXISTS ratings CASCADE;
 DROP TABLE IF EXISTS ride_locations CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
+DROP TABLE IF EXISTS payment_methods CASCADE;
 DROP TABLE IF EXISTS rides CASCADE;
 DROP TABLE IF EXISTS driver_locations CASCADE;
 DROP TABLE IF EXISTS drivers CASCADE;
@@ -54,7 +55,48 @@ CREATE TABLE passengers (
 CREATE INDEX idx_passengers_user_id ON passengers(user_id);
 
 -- ====================================
--- 3. Vehicles Table
+-- 3. Payment Methods Table
+-- ====================================
+CREATE TABLE payment_methods (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type payment_method NOT NULL,
+    -- For card payments (Visa/Mastercard)
+    card_token TEXT,
+    card_last_four VARCHAR(4),
+    card_brand VARCHAR(20),
+    cardholder_name VARCHAR(100),
+    expiry_month INTEGER,
+    expiry_year INTEGER,
+    -- For mobile money (Orange Money, MTN)
+    mobile_number VARCHAR(20),
+    account_name VARCHAR(100),
+    -- Management
+    is_default BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Constraints
+    CONSTRAINT valid_card_payment CHECK (
+        type != 'card' OR (
+            card_token IS NOT NULL AND 
+            card_last_four IS NOT NULL AND 
+            card_brand IS NOT NULL AND
+            expiry_month IS NOT NULL AND
+            expiry_year IS NOT NULL
+        )
+    ),
+    CONSTRAINT valid_mobile_payment CHECK (
+        type = 'card' OR mobile_number IS NOT NULL
+    )
+);
+
+CREATE INDEX idx_payment_methods_user ON payment_methods(user_id);
+CREATE INDEX idx_payment_methods_active ON payment_methods(user_id, is_active);
+CREATE INDEX idx_payment_methods_default ON payment_methods(user_id, is_default);
+
+-- ====================================
+-- 4. Vehicles Table
 -- ====================================
 CREATE TABLE vehicles (
     id SERIAL PRIMARY KEY,
