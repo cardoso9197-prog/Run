@@ -80,7 +80,7 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phoneNumber, otp, name } = req.body;
+    const { phoneNumber, otp, name, vehicleType, licensePlate } = req.body;
     let userType = req.body.userType; // Use let so we can reassign it later
 
     if (!phoneNumber || !otp) {
@@ -159,8 +159,13 @@ router.post('/verify-otp', async (req, res) => {
           );
         } else if (userType === 'driver') {
           await client.query(
-            'INSERT INTO drivers (user_id, license_number) VALUES ($1, $2)',
-            [newUserId, 'TEMP_' + Date.now()] // Temporary license number
+            'INSERT INTO drivers (user_id, vehicle_type, license_plate, license_number) VALUES ($1, $2, $3, $4)',
+            [
+              newUserId,
+              vehicleType || 'Car',
+              licensePlate || 'TEMP_' + Date.now(),
+              'TEMP_' + Date.now()
+            ]
           );
         }
 
