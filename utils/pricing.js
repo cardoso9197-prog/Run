@@ -43,9 +43,9 @@ function toRadians(degrees) {
  * @param {number} durationMinutes - Duration in minutes
  * @param {string} vehicleType - Type of vehicle (RunRun, Moto, Comfort, XL)
  * @param {number} surgeMultiplier - Surge pricing multiplier (default 1.0)
- * @returns {number} Fare in XOF (West African CFA franc)
+ * @returns {object} Fare breakdown with components and total
  */
-function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier = 1.0) {
+async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier = 1.0) {
   // Base pricing from environment variables or defaults
   const baseFare = parseFloat(process.env.BASE_FARE) || 500;
   const perKmRate = parseFloat(process.env.PER_KM_RATE) || 200;
@@ -63,25 +63,32 @@ function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier
 
   const vehicleMultiplier = multipliers[vehicleType] || 1.0;
 
-  // Calculate base fare
-  let fare = baseFare;
-  fare += (distanceKm * perKmRate);
-  fare += (durationMinutes * perMinuteRate);
-  fare += bookingFee;
+  // Calculate fare components
+  const distanceFare = distanceKm * perKmRate * vehicleMultiplier;
+  const durationFare = durationMinutes * perMinuteRate * vehicleMultiplier;
+  const adjustedBaseFare = (baseFare + bookingFee) * vehicleMultiplier;
 
-  // Apply vehicle type multiplier
-  fare *= vehicleMultiplier;
+  // Calculate subtotal
+  let subtotal = adjustedBaseFare + distanceFare + durationFare;
 
   // Apply surge pricing
-  fare *= surgeMultiplier;
+  const surgeFare = surgeMultiplier > 1.0 ? (subtotal * (surgeMultiplier - 1.0)) : 0;
+  let totalFare = subtotal + surgeFare;
 
   // Ensure minimum fare
-  fare = Math.max(fare, minimumFare);
+  totalFare = Math.max(totalFare, minimumFare);
 
   // Round to nearest 50 XOF
-  fare = Math.round(fare / 50) * 50;
+  totalFare = Math.round(totalFare / 50) * 50;
 
-  return fare;
+  return {
+    baseFare: Math.round(adjustedBaseFare),
+    distanceFare: Math.round(distanceFare),
+    durationFare: Math.round(durationFare),
+    surgeFare: Math.round(surgeFare),
+    totalFare: Math.round(totalFare),
+    surgeMultiplier,
+  };
 }
 
 /**
