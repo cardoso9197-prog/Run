@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const { pool, query } = require('../database/db');
 const { requirePassenger, requireDriver } = require('../middleware/auth');
 const { calculateFare, calculateDistance } = require('../utils/pricing');
@@ -160,4 +160,64 @@ router.put('/:id/status', requireDriver, async (req, res) => {
   }
 });
 
+
+/**
+ * PUT /api/rides/:id/cancel
+ * Cancel a ride (passenger or driver)
+ */
+router.put('/:id/cancel', async (req, res) => {
+  try {
+    const rideId = req.params.id;
+    const { reason } = req.body;
+    const rideResult = await query('SELECT * FROM rides WHERE id = $1', [rideId]);
+    if (rideResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Ride not found' });
+    }
+    const ride = rideResult.rows[0];
+    const isPassenger = req.user.role === 'passenger';
+    const isDriver = req.user.role === 'driver';
+    let authorized = false;
+    if (isPassenger) {
+      const passengerResult = await query('SELECT id FROM passengers WHERE user_id = $1', [req.user.id]);
+      authorized = passengerResult.rows.length > 0 && passengerResult.rows[0].id === ride.passenger_id;
+    } else if (isDriver) {
+      const driverResult = await query('SELECT id FROM drivers WHERE user_id = $1', [req.user.id]);
+      authorized = driverResult.rows.length > 0 && driverResult.rows[0].id === ride.driver_id;
+    }
+    if (!authorized) {
+      return res.status(403).json({ error: 'Not authorized to cancel this ride' });
+    }
+    if (ride.status === 'completed' || ride.status === 'cancelled') {
+      return res.status(400).json({ error: 'Cannot cancel this ride' });
+    }
+    await query('UPDATE rides SET status = $1, updated_at = NOW() WHERE id = $2', ['cancelled', rideId]);
+    res.json({ success: true, message: 'Ride cancelled successfully', ride: { id: rideId, status: 'cancelled' } });
+  } catch (error) {
+    console.error('Cancel ride error:', error);
+    res.status(500).json({ error: 'Failed to cancel ride', message: error.message });
+  }
+});
+
+/**
+ * GET /api/rides/history
+ * Get passenger ride history
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    const passengerResult = await query('SELECT id FROM passengers WHERE user_id = $1', [req.user.id]);
+    if (passengerResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Passenger profile not found' });
+    }
+    const passengerId = passengerResult.rows[0].id;
+    const ridesResult = await query('SELECT r.*, d.name as driver_name FROM rides r LEFT JOIN drivers d ON r.driver_id = d.id LEFT JOIN users u ON d.user_id = u.id WHERE r.passenger_id = $1 ORDER BY r.created_at DESC LIMIT $2 OFFSET $3', [passengerId, limit, offset]);
+    res.json({ success: true, rides: ridesResult.rows });
+  } catch (error) {
+    console.error('Get ride history error:', error);
+    res.status(500).json({ error: 'Failed to get ride history', message: error.message });
+  }
+});
+
 module.exports = router;
+
