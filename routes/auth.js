@@ -211,8 +211,11 @@ router.post('/verify-otp', async (req, res) => {
       token,
       user: {
         id: userId,
+        name: name || profile?.name,
+        phone: phoneNumber,
         phoneNumber,
         userType,
+        is_activated: userType === 'driver' ? (profile?.is_activated || false) : true,
         profile,
       },
     });
@@ -285,8 +288,11 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user.id,
+        name: profile?.name,
+        phone: phoneNumber,
         phoneNumber,
         userType: user.user_type,
+        is_activated: user.user_type === 'driver' ? (profile?.is_activated || false) : true,
         profile,
       },
     });

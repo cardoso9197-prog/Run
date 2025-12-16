@@ -28,6 +28,7 @@ const driverRoutes = require('./routes/drivers');
 const passengerRoutes = require('./routes/passengers');
 const paymentRoutes = require('./routes/payments');
 const paymentMethodsRoutes = require('./routes/paymentMethods');
+const adminRoutes = require('./routes/admin');
 const { authenticateToken } = require('./middleware/auth');
 
 // Initialize Express app
@@ -90,6 +91,7 @@ app.use('/api/drivers', authenticateToken, driverRoutes);
 app.use('/api/passengers', authenticateToken, passengerRoutes);
 app.use('/api/payments', authenticateToken, paymentRoutes);
 app.use('/api/payment-methods', authenticateToken, paymentMethodsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ==========================================
 // WebSocket Connection Management
