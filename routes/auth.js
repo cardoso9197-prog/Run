@@ -114,7 +114,8 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
 
-    // OTP is valid, remove it
+    // OTP is valid, get stored user data
+    const userData = storedOTP.userData || {};
     otpStore.delete(phoneNumber);
 
     // Check if user exists
@@ -128,18 +129,30 @@ router.post('/verify-otp', async (req, res) => {
 
     if (userResult.rows.length === 0) {
       // New user - create account
-      if (!userType || !['passenger', 'driver'].includes(userType)) {
+      // Use stored userData or fallback to request body
+      const finalUserType = userData.userType || userType || 'passenger';
+      const finalName = userData.name || name;
+      const finalEmail = userData.email || '';
+      const finalPassword = userData.password || '';
+
+      if (!finalUserType || !['passenger', 'driver'].includes(finalUserType)) {
         return res.status(400).json({
           error: 'Invalid user type',
           message: 'User type must be either "passenger" or "driver"',
         });
       }
 
-      if (!name || name.trim().length < 2) {
+      if (!finalName || finalName.trim().length < 2) {
         return res.status(400).json({
           error: 'Invalid name',
           message: 'Name is required and must be at least 2 characters',
         });
+      }
+
+      // Hash password if provided
+      let hashedPassword = '';
+      if (finalPassword) {
+        hashedPassword = await bcrypt.hash(finalPassword, 10);
       }
 
       // Create user in transaction
@@ -147,17 +160,17 @@ router.post('/verify-otp', async (req, res) => {
         // Create base user
         const userRes = await client.query(
           'INSERT INTO users (name, email, phone, password, user_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-          [name.trim(), '', phoneNumber, '', userType]
+          [finalName.trim(), finalEmail, phoneNumber, hashedPassword, finalUserType]
         );
         const newUserId = userRes.rows[0].id;
 
         // Create passenger or driver profile
-        if (userType === 'passenger') {
+        if (finalUserType === 'passenger') {
           await client.query(
             'INSERT INTO passengers (user_id) VALUES ($1)',
             [newUserId]
           );
-        } else if (userType === 'driver') {
+        } else if (finalUserType === 'driver') {
           await client.query(
             'INSERT INTO drivers (user_id, vehicle_type, license_plate, license_number) VALUES ($1, $2, $3, $4)',
             [
@@ -174,6 +187,7 @@ router.post('/verify-otp', async (req, res) => {
 
       userId = result;
       isNewUser = true;
+      userType = finalUserType;
     } else {
       userId = userResult.rows[0].id;
       userType = userResult.rows[0].user_type;
@@ -300,6 +314,75 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       error: 'Login failed',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/auth/register
+ * Register new user (sends OTP automatically)
+ */
+router.post('/register', async (req, res) => {
+  try {
+    const { phoneNumber, name, email, password, userType } = req.body;
+
+    if (!phoneNumber || !name) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Phone number and name are required',
+      });
+    }
+
+    // Format phone number if needed
+    const formattedPhone = phoneNumber.startsWith('+245') ? phoneNumber : `+245${phoneNumber}`;
+
+    if (!validatePhoneNumber(formattedPhone)) {
+      return res.status(400).json({
+        error: 'Invalid phone number',
+        message: 'Phone number must be in format +245XXXXXXXXX',
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await query(
+      'SELECT id FROM users WHERE phone = $1',
+      [formattedPhone]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'A user with this phone number already exists',
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+
+    // Store OTP with user data
+    otpStore.set(formattedPhone, {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+      userData: { name, email, password, userType: userType || 'passenger' },
+    });
+
+    // Send OTP
+    await sendOTP(formattedPhone, otp);
+
+    console.log(`📝 Registration OTP for ${formattedPhone}: ${otp}`);
+
+    res.json({
+      success: true,
+      message: 'OTP sent to your phone number',
+      phoneNumber: formattedPhone,
+      // DEVELOPMENT ONLY: Return OTP in response
+      ...(process.env.NODE_ENV !== 'production' && { otp }),
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      error: 'Registration failed',
       message: error.message,
     });
   }
