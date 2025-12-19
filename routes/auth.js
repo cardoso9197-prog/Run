@@ -12,6 +12,12 @@ const { validatePhoneNumber } = require('../middleware/validation');
 
 const router = express.Router();
 
+// JWT Secret - Use environment variable or fallback
+const JWT_SECRET = process.env.JWT_SECRET || 'runrun-secret-key-2025-guinea-bissau';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
+
+console.log('✅ JWT_SECRET loaded:', JWT_SECRET ? 'Yes' : 'No');
+
 // In-memory OTP storage (use Redis in production!)
 const otpStore = new Map();
 
@@ -80,10 +86,13 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   try {
+    console.log('🔐 OTP verification request:', { phoneNumber: req.body.phoneNumber, otp: req.body.otp });
+    
     const { phoneNumber, otp, name, vehicleType, licensePlate } = req.body;
     let userType = req.body.userType; // Use let so we can reassign it later
 
     if (!phoneNumber || !otp) {
+      console.log('❌ Missing phone or OTP');
       return res.status(400).json({
         error: 'Missing required fields',
         message: 'Phone number and OTP are required',
@@ -92,6 +101,8 @@ router.post('/verify-otp', async (req, res) => {
 
     // Check if OTP exists and is valid
     const storedOTP = otpStore.get(phoneNumber);
+    console.log('🔍 Stored OTP data:', storedOTP ? 'Found' : 'Not found');
+    
     if (!storedOTP) {
       return res.status(400).json({
         error: 'Invalid OTP',
@@ -194,11 +205,13 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     // Generate JWT token
+    console.log('🔑 Generating JWT token for user:', userId);
     const token = jwt.sign(
       { userId, phoneNumber, userType },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
     );
+    console.log('✅ Token generated successfully');
 
     // Get user profile
     let profile = null;
@@ -275,8 +288,8 @@ router.post('/login', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, phoneNumber, userType: user.user_type },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     // Get user profile
@@ -325,9 +338,12 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
+    console.log('📝 Registration request received:', { phoneNumber: req.body.phoneNumber, name: req.body.name });
+    
     const { phoneNumber, name, email, password, userType } = req.body;
 
     if (!phoneNumber || !name) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({
         error: 'Missing required fields',
         message: 'Phone number and name are required',
@@ -336,8 +352,10 @@ router.post('/register', async (req, res) => {
 
     // Format phone number if needed
     const formattedPhone = phoneNumber.startsWith('+245') ? phoneNumber : `+245${phoneNumber}`;
+    console.log('📞 Formatted phone:', formattedPhone);
 
     if (!validatePhoneNumber(formattedPhone)) {
+      console.log('❌ Invalid phone number format');
       return res.status(400).json({
         error: 'Invalid phone number',
         message: 'Phone number must be in format +245XXXXXXXXX',
@@ -351,6 +369,7 @@ router.post('/register', async (req, res) => {
     );
 
     if (existingUser.rows.length > 0) {
+      console.log('❌ User already exists');
       return res.status(400).json({
         error: 'User already exists',
         message: 'A user with this phone number already exists',
@@ -359,6 +378,7 @@ router.post('/register', async (req, res) => {
 
     // Generate OTP
     const otp = generateOTP();
+    console.log(`✅ Generated OTP: ${otp}`);
 
     // Store OTP with user data
     otpStore.set(formattedPhone, {
@@ -370,17 +390,18 @@ router.post('/register', async (req, res) => {
     // Send OTP
     await sendOTP(formattedPhone, otp);
 
-    console.log(`📝 Registration OTP for ${formattedPhone}: ${otp}`);
+    console.log(`� OTP stored and logged for ${formattedPhone}: ${otp}`);
 
     res.json({
       success: true,
       message: 'OTP sent to your phone number',
       phoneNumber: formattedPhone,
-      // DEVELOPMENT ONLY: Return OTP in response
-      ...(process.env.NODE_ENV !== 'production' && { otp }),
+      // ALWAYS return OTP for testing (even in production for now)
+      otp: otp,
     });
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('❌ Register error:', error.message);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       error: 'Registration failed',
       message: error.message,
@@ -406,7 +427,7 @@ router.get('/me', async (req, res) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Get user
     const userResult = await query(
