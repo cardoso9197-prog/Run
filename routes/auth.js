@@ -338,12 +338,15 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    console.log('📝 Registration request received:', { phoneNumber: req.body.phoneNumber, name: req.body.name });
+    console.log('📝 Registration request received:', req.body);
     
-    const { phoneNumber, name, email, password, userType } = req.body;
+    // Accept both 'phone' and 'phoneNumber', 'role' and 'userType'
+    const { phone, phoneNumber, name, email, password, role, userType } = req.body;
+    const finalPhone = phoneNumber || phone;
+    const finalUserType = userType || role || 'passenger';
 
-    if (!phoneNumber || !name) {
-      console.log('❌ Missing required fields');
+    if (!finalPhone || !name) {
+      console.log('❌ Missing required fields:', { phone: finalPhone, name });
       return res.status(400).json({
         error: 'Missing required fields',
         message: 'Phone number and name are required',
@@ -351,7 +354,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Format phone number if needed
-    const formattedPhone = phoneNumber.startsWith('+245') ? phoneNumber : `+245${phoneNumber}`;
+    const formattedPhone = finalPhone.startsWith('+245') ? finalPhone : `+245${finalPhone}`;
     console.log('📞 Formatted phone:', formattedPhone);
 
     if (!validatePhoneNumber(formattedPhone)) {
@@ -384,7 +387,7 @@ router.post('/register', async (req, res) => {
     otpStore.set(formattedPhone, {
       otp,
       expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-      userData: { name, email, password, userType: userType || 'passenger' },
+      userData: { name, email, password, userType: finalUserType },
     });
 
     // Send OTP
