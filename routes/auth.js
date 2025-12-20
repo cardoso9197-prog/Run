@@ -261,9 +261,13 @@ router.post('/verify-otp', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
+    // Accept both 'phone' and 'phoneNumber' (matching registration endpoint)
+    const { phoneNumber, phone } = req.body;
+    const finalPhone = phoneNumber || phone;
 
-    if (!phoneNumber) {
+    console.log('🔐 Login request:', { phoneNumber, phone, finalPhone });
+
+    if (!finalPhone) {
       return res.status(400).json({
         error: 'Missing phone number',
         message: 'Phone number is required',
@@ -273,7 +277,7 @@ router.post('/login', async (req, res) => {
     // Get user
     const userResult = await query(
       'SELECT id, user_type FROM users WHERE phone = $1',
-      [phoneNumber]
+      [finalPhone]
     );
 
     if (userResult.rows.length === 0) {
