@@ -28,6 +28,7 @@ const driverRoutes = require('./routes/drivers');
 const passengerRoutes = require('./routes/passengers');
 const paymentRoutes = require('./routes/payments');
 const paymentMethodsRoutes = require('./routes/paymentMethods');
+const withdrawalRoutes = require('./routes/withdrawals');
 const adminRoutes = require('./routes/admin');
 const { authenticateToken } = require('./middleware/auth');
 
@@ -91,6 +92,7 @@ app.use('/api/drivers', authenticateToken, driverRoutes);
 app.use('/api/passengers', authenticateToken, passengerRoutes);
 app.use('/api/payments', authenticateToken, paymentRoutes);
 app.use('/api/payment-methods', authenticateToken, paymentMethodsRoutes);
+app.use('/api/withdrawals', authenticateToken, withdrawalRoutes);
 app.use('/api/admin', adminRoutes);
 
 // ==========================================
