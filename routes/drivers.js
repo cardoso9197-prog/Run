@@ -53,15 +53,23 @@ router.put('/profile', requireDriver, async (req, res) => {
   try {
     const { name, email, profilePhotoUrl } = req.body;
 
+    // Update user name if provided
+    if (name) {
+      await query(`
+        UPDATE users
+        SET name = $1
+        WHERE id = $2
+      `, [name, req.user.id]);
+    }
+
+    // Update driver email and photo
     const result = await query(`
       UPDATE drivers
-      SET name = COALESCE($1, name),
-          email = COALESCE($2, email),
-          profile_photo_url = COALESCE($3, profile_photo_url),
-          updated_at = NOW()
-      WHERE user_id = $4
+      SET email = COALESCE($1, email),
+          profile_photo_url = COALESCE($2, profile_photo_url)
+      WHERE user_id = $3
       RETURNING *
-    `, [name, email, profilePhotoUrl, req.user.id]);
+    `, [email, profilePhotoUrl, req.user.id]);
 
     res.json({
       success: true,
@@ -196,7 +204,7 @@ router.get('/earnings', requireDriver, async (req, res) => {
         COALESCE(AVG(r.actual_distance_km), 0) as avg_distance,
         COALESCE(AVG(rt.passenger_rating), 0) as avg_rating
       FROM rides r
-      LEFT JOIN payments p ON r.id = p.ride_id AND p.status = 'completed'
+      LEFT JOIN payments p ON r.id = p.ride_id
       LEFT JOIN ratings rt ON r.id = rt.ride_id
       WHERE r.driver_id = $1
         AND r.status = 'completed'
@@ -247,7 +255,6 @@ router.get('/earnings/details', requireDriver, async (req, res) => {
       JOIN payments p ON r.id = p.ride_id
       WHERE r.driver_id = $1
         AND r.status = 'completed'
-        AND p.status = 'completed'
       ORDER BY r.completed_at DESC
       LIMIT $2 OFFSET $3
     `, [driverId, limit, offset]);
@@ -305,8 +312,7 @@ router.put('/vehicle', requireDriver, async (req, res) => {
             make = COALESCE($3, make),
             model = COALESCE($4, model),
             year = COALESCE($5, year),
-            color = COALESCE($6, color),
-            updated_at = NOW()
+            color = COALESCE($6, color)
         WHERE id = $7
       `, [vehicleType, licensePlate, make, model, year, color, driver.vehicle_id]);
     } else {
