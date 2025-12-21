@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI } from '../services/api';
 
 export default function BookRideScreen({ navigation }) {
+  console.log('BookRideScreen rendering');
+  
   const { t } = useTranslation();
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
@@ -20,6 +23,8 @@ export default function BookRideScreen({ navigation }) {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const vehicleTypes = [
     { type: 'Moto', baseFare: 500, perKm: 100, icon: '🏍️' },
@@ -28,6 +33,7 @@ export default function BookRideScreen({ navigation }) {
   ];
 
   useEffect(() => {
+    console.log('BookRideScreen mounted, loading payment methods...');
     loadPaymentMethods();
   }, []);
 
@@ -37,14 +43,21 @@ export default function BookRideScreen({ navigation }) {
 
   const loadPaymentMethods = async () => {
     try {
+      console.log('Fetching payment methods...');
       const response = await passengerAPI.getPaymentMethods();
+      console.log('Payment methods response:', response.data);
       // Backend returns { success: true, paymentMethods: [...] }
       const methods = response.data.paymentMethods || [];
+      console.log('Payment methods loaded:', methods.length);
       setPaymentMethods(methods);
       const defaultMethod = methods.find((pm) => pm.is_default);
       setSelectedPayment(defaultMethod || methods[0]);
+      setInitialLoading(false);
     } catch (error) {
       console.error('Error loading payment methods:', error);
+      console.error('Error details:', error.response?.data);
+      setError('Failed to load payment methods');
+      setInitialLoading(false);
     }
   };
 
@@ -94,6 +107,35 @@ export default function BookRideScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B00" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>⚠️ {error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => {
+            setError(null);
+            setInitialLoading(true);
+            loadPaymentMethods();
+          }}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  console.log('Rendering BookRideScreen UI');
 
   return (
     <ScrollView style={styles.container}>
@@ -287,6 +329,41 @@ const styles = StyleSheet.create({
   bookButtonText: {
     color: '#FF6B00',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF0000',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#FF6B00',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+  },
+  retryButtonText: {
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
