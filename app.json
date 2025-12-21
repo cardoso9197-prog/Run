@@ -27,7 +27,12 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDEXAMPLE_KEY_REPLACE_WITH_REAL_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

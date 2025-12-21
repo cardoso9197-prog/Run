@@ -12,12 +12,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI } from '../services/api';
 
-export default function BookRideScreen({ navigation }) {
+export default function BookRideScreen({ navigation, route }) {
   console.log('BookRideScreen rendering');
   
   const { t } = useTranslation();
-  const [pickup, setPickup] = useState('');
-  const [dropoff, setDropoff] = useState('');
+  const [pickupLocation, setPickupLocation] = useState(null);
+  const [dropoffLocation, setDropoffLocation] = useState(null);
   const [vehicleType, setVehicleType] = useState('Normal');
   const [estimatedFare, setEstimatedFare] = useState(0);
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -25,6 +25,16 @@ export default function BookRideScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Handle location selected from map
+  useEffect(() => {
+    if (route.params?.pickup) {
+      setPickupLocation(route.params.pickup);
+    }
+    if (route.params?.dropoff) {
+      setDropoffLocation(route.params.dropoff);
+    }
+  }, [route.params]);
 
   const vehicleTypes = [
     { type: 'Moto', baseFare: 500, perKm: 100, icon: '🏍️' },
@@ -39,7 +49,7 @@ export default function BookRideScreen({ navigation }) {
 
   useEffect(() => {
     calculateFare();
-  }, [vehicleType, pickup, dropoff]);
+  }, [vehicleType, pickupLocation, dropoffLocation]);
 
   const loadPaymentMethods = async () => {
     try {
@@ -71,8 +81,8 @@ export default function BookRideScreen({ navigation }) {
   };
 
   const handleBookRide = async () => {
-    if (!pickup || !dropoff) {
-      Alert.alert('Error', 'Please enter pickup and drop-off locations');
+    if (!pickupLocation || !dropoffLocation) {
+      Alert.alert('Error', 'Please select pickup and drop-off locations from the map');
       return;
     }
 
@@ -84,8 +94,12 @@ export default function BookRideScreen({ navigation }) {
     setLoading(true);
     try {
       const response = await rideAPI.createRide({
-        pickup_address: pickup,
-        dropoff_address: dropoff,
+        pickup_address: pickupLocation.name,
+        pickup_latitude: pickupLocation.latitude,
+        pickup_longitude: pickupLocation.longitude,
+        dropoff_address: dropoffLocation.name,
+        dropoff_latitude: dropoffLocation.latitude,
+        dropoff_longitude: dropoffLocation.longitude,
         vehicle_type: vehicleType,
         payment_method_id: selectedPayment.id,
         fare_estimate: estimatedFare,
@@ -140,21 +154,25 @@ export default function BookRideScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>📍 {t('pickup')}</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Avenida Principal, Bissau"
-          value={pickup}
-          onChangeText={setPickup}
-        />
+        <Text style={styles.sectionTitle}>📍 Pickup Location</Text>
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={() => navigation.navigate('MapLocationPicker', { locationType: 'pickup' })}
+        >
+          <Text style={styles.locationButtonText}>
+            {pickupLocation ? pickupLocation.name : '📌 Tap to select pickup on map'}
+          </Text>
+        </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>🎯 {t('dropoff')}</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Aeroporto Internacional"
-          value={dropoff}
-          onChangeText={setDropoff}
-        />
+        <Text style={styles.sectionTitle}>🎯 Dropoff Location</Text>
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={() => navigation.navigate('MapLocationPicker', { locationType: 'dropoff' })}
+        >
+          <Text style={styles.locationButtonText}>
+            {dropoffLocation ? dropoffLocation.name : '📌 Tap to select dropoff on map'}
+          </Text>
+        </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>🚗 {t('vehicleType')}</Text>
         <View style={styles.vehicleGrid}>
@@ -239,6 +257,21 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginBottom: 10,
     color: '#000',
+  },
+  locationButton: {
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    borderRadius: 10,
+    padding: 15,
+    backgroundColor: '#F0F8F0',
+    marginBottom: 10,
+    minHeight: 60,
+    justifyContent: 'center',
+  },
+  locationButtonText: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
   },
   input: {
     borderWidth: 1,

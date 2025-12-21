@@ -11,6 +11,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import OTPVerificationScreen from './src/screens/OTPVerificationScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import BookRideScreen from './src/screens/BookRideScreen';
+import MapLocationPickerScreen from './src/screens/MapLocationPickerScreen';
 import ActiveRideScreen from './src/screens/ActiveRideScreen';
 import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
 import AddPaymentMethodScreen from './src/screens/AddPaymentMethodScreen';
@@ -96,6 +97,11 @@ export default function App() {
               name="BookRide" 
               component={BookRideScreen}
               options={{ title: 'Book a Ride' }}
+            />
+            <Stack.Screen 
+              name="MapLocationPicker" 
+              component={MapLocationPickerScreen}
+              options={{ title: 'Select Location' }}
             />
             <Stack.Screen 
               name="ActiveRide" 
