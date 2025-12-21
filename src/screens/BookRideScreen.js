@@ -94,15 +94,14 @@ export default function BookRideScreen({ navigation, route }) {
     setLoading(true);
     try {
       const response = await rideAPI.createRide({
-        pickup_address: pickupLocation.name,
-        pickup_latitude: pickupLocation.latitude,
-        pickup_longitude: pickupLocation.longitude,
-        dropoff_address: dropoffLocation.name,
-        dropoff_latitude: dropoffLocation.latitude,
-        dropoff_longitude: dropoffLocation.longitude,
-        vehicle_type: vehicleType,
-        payment_method_id: selectedPayment.id,
-        fare_estimate: estimatedFare,
+        pickupAddress: pickupLocation.name,
+        pickupLatitude: pickupLocation.latitude,
+        pickupLongitude: pickupLocation.longitude,
+        dropoffAddress: dropoffLocation.name,
+        dropoffLatitude: dropoffLocation.latitude,
+        dropoffLongitude: dropoffLocation.longitude,
+        vehicleType: vehicleType,
+        paymentMethodId: selectedPayment.id,
       });
 
       Alert.alert('Success', 'Ride requested! Looking for drivers...', [

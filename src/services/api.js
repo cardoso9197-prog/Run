@@ -63,13 +63,13 @@ export const passengerAPI = {
 
 // Ride APIs
 export const rideAPI = {
-  createRide: (data) => api.post('/rides', data),
+  createRide: (data) => api.post('/rides/request', data),
   getRides: () => api.get('/rides'),
   getRideDetails: (id) => api.get(`/rides/${id}`),
   cancelRide: (id) => api.put(`/rides/${id}/cancel`),
   getTripHistory: () => api.get('/rides/history'),
   rateRide: (id, data) => api.post(`/rides/${id}/rate`, data),
-  estimateFare: (data) => api.post('/rides/estimate', data),
+  estimateFare: (data) => api.post('/rides/estimate-fare', data),
 };
 
 export default api;
