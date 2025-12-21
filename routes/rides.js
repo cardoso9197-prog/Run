@@ -419,12 +419,10 @@ router.get('/history', requirePassenger, async (req, res) => {
       SELECT r.*,
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
-             v.make, v.model, v.color, v.license_plate,
-             rat.passenger_rating, rat.passenger_comment
+             v.make, v.model, v.color, v.license_plate
       FROM rides r
       LEFT JOIN drivers d ON r.driver_id = d.id
       LEFT JOIN vehicles v ON d.vehicle_id = v.id
-      LEFT JOIN ratings rat ON r.id = rat.ride_id
       WHERE r.passenger_id = $1
     `;
 
