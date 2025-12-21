@@ -163,6 +163,16 @@ export default function BookRideScreen({ navigation, route }) {
             {pickupLocation ? pickupLocation.name : '📌 Tap to select pickup on map'}
           </Text>
         </TouchableOpacity>
+        
+        {pickupLocation && (
+          <TextInput
+            style={styles.locationEditInput}
+            value={pickupLocation.name}
+            onChangeText={(text) => setPickupLocation({ ...pickupLocation, name: text })}
+            placeholder="Edit pickup details (e.g., Near the blue gate)"
+            multiline
+          />
+        )}
 
         <Text style={styles.sectionTitle}>🎯 Dropoff Location</Text>
         <TouchableOpacity
@@ -173,6 +183,16 @@ export default function BookRideScreen({ navigation, route }) {
             {dropoffLocation ? dropoffLocation.name : '📌 Tap to select dropoff on map'}
           </Text>
         </TouchableOpacity>
+
+        {dropoffLocation && (
+          <TextInput
+            style={styles.locationEditInput}
+            value={dropoffLocation.name}
+            onChangeText={(text) => setDropoffLocation({ ...dropoffLocation, name: text })}
+            placeholder="Edit dropoff details (e.g., Behind the market)"
+            multiline
+          />
+        )}
 
         <Text style={styles.sectionTitle}>🚗 {t('vehicleType')}</Text>
         <View style={styles.vehicleGrid}>
@@ -272,6 +292,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     fontWeight: '500',
+  },
+  locationEditInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    backgroundColor: '#FFF',
+    marginBottom: 15,
+    minHeight: 50,
+    textAlignVertical: 'top',
+    color: '#666',
+    fontStyle: 'italic',
   },
   input: {
     borderWidth: 1,
