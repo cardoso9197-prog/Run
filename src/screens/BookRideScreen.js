@@ -7,19 +7,23 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import * as Location from 'expo-location';
 import { rideAPI, passengerAPI } from '../services/api';
 
 export default function BookRideScreen({ navigation }) {
   const { t } = useTranslation();
   const [pickup, setPickup] = useState('');
+  const [pickupCoords, setPickupCoords] = useState(null);
   const [dropoff, setDropoff] = useState('');
   const [vehicleType, setVehicleType] = useState('Normal');
   const [estimatedFare, setEstimatedFare] = useState(0);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
   const vehicleTypes = [
     { type: 'Moto', baseFare: 500, perKm: 100, icon: '🏍️' },
@@ -29,18 +33,86 @@ export default function BookRideScreen({ navigation }) {
 
   useEffect(() => {
     loadPaymentMethods();
+    requestLocationPermission();
   }, []);
 
   useEffect(() => {
     calculateFare();
   }, [vehicleType, pickup, dropoff]);
 
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is needed to use your current location for pickup.'
+        );
+      }
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    setLoadingLocation(true);
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please enable location permission to use your current location.'
+        );
+        setLoadingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude, longitude } = location.coords;
+      setPickupCoords({ latitude, longitude });
+
+      // Reverse geocode to get address
+      const addresses = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      if (addresses && addresses.length > 0) {
+        const address = addresses[0];
+        const formattedAddress = [
+          address.name,
+          address.street,
+          address.city,
+          address.region,
+        ]
+          .filter(Boolean)
+          .join(', ');
+
+        setPickup(formattedAddress || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        Alert.alert('Success', 'Current location set as pickup!');
+      } else {
+        setPickup(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        Alert.alert('Success', 'Location coordinates set as pickup!');
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Failed to get your current location. Please try again.');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
   const loadPaymentMethods = async () => {
     try {
       const response = await passengerAPI.getPaymentMethods();
-      setPaymentMethods(response.data);
-      const defaultMethod = response.data.find((pm) => pm.is_default);
-      setSelectedPayment(defaultMethod || response.data[0]);
+      // Backend returns { success: true, paymentMethods: [...] }
+      const methods = response.data.paymentMethods || [];
+      setPaymentMethods(methods);
+      const defaultMethod = methods.find((pm) => pm.is_default);
+      setSelectedPayment(defaultMethod || methods[0]);
     } catch (error) {
       console.error('Error loading payment methods:', error);
     }
@@ -96,7 +168,20 @@ export default function BookRideScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>📍 {t('pickup')}</Text>
+        <View style={styles.locationHeader}>
+          <Text style={styles.sectionTitle}>📍 {t('pickup')}</Text>
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={getCurrentLocation}
+            disabled={loadingLocation}
+          >
+            {loadingLocation ? (
+              <ActivityIndicator size="small" color="#FF6B00" />
+            ) : (
+              <Text style={styles.locationButtonText}>📍 Use Current Location</Text>
+            )}
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={styles.input}
           placeholder="Avenida Principal, Bissau"
@@ -189,12 +274,30 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+  locationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 10,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 10,
     color: '#000',
+  },
+  locationButton: {
+    backgroundColor: '#FFE8D6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FF6B00',
+  },
+  locationButtonText: {
+    color: '#FF6B00',
+    fontSize: 12,
+    fontWeight: '600',
   },
   input: {
     borderWidth: 1,
