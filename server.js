@@ -510,6 +510,81 @@ app.use((req, res) => {
   });
 });
 
+// Auto-migration: Create payment_methods table if it doesn't exist
+async function ensurePaymentMethodsTable() {
+  try {
+    console.log('🔧 Checking payment_methods table...');
+    
+    // Check if table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'payment_methods'
+      );
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      console.log('📦 Creating payment_methods table...');
+      
+      // Create payment_method ENUM
+      await pool.query(`
+        DO $$ BEGIN
+          CREATE TYPE payment_method AS ENUM ('card', 'orange_money', 'mtn_momo');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;
+      `);
+      
+      // Create table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS payment_methods (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          type payment_method NOT NULL,
+          card_token TEXT,
+          card_last_four VARCHAR(4),
+          card_brand VARCHAR(20),
+          cardholder_name VARCHAR(100),
+          expiry_month INTEGER,
+          expiry_year INTEGER,
+          mobile_number VARCHAR(20),
+          account_name VARCHAR(100),
+          is_default BOOLEAN DEFAULT false,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT valid_card_payment CHECK (
+            type != 'card' OR (
+              card_token IS NOT NULL AND 
+              card_last_four IS NOT NULL AND 
+              card_brand IS NOT NULL AND
+              expiry_month IS NOT NULL AND
+              expiry_year IS NOT NULL
+            )
+          ),
+          CONSTRAINT valid_mobile_payment CHECK (
+            type = 'card' OR mobile_number IS NOT NULL
+          )
+        );
+      `);
+      
+      // Create indexes
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_payment_methods_user ON payment_methods(user_id);
+        CREATE INDEX IF NOT EXISTS idx_payment_methods_active ON payment_methods(user_id, is_active);
+        CREATE INDEX IF NOT EXISTS idx_payment_methods_default ON payment_methods(user_id, is_default);
+      `);
+      
+      console.log('✅ payment_methods table created successfully!');
+    } else {
+      console.log('✅ payment_methods table already exists');
+    }
+  } catch (error) {
+    console.error('⚠️  Error checking/creating payment_methods table:', error.message);
+    // Don't crash the server, just log the error
+  }
+}
+
 // Start server
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
@@ -522,14 +597,20 @@ server.on('error', (error) => {
   process.exit(1);
 });
 
-server.listen(PORT, HOST, () => {
-  console.log('\n🚀 =============================================');
-  console.log(`🚗 Run Run Backend Server`);
-  console.log(`📍 Host: ${HOST}:${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('🚀 =============================================\n');
-  console.log('Server is ready to accept connections...\n');
+// Run migrations and start server
+ensurePaymentMethodsTable().then(() => {
+  server.listen(PORT, HOST, () => {
+    console.log('\n🚀 =============================================');
+    console.log(`🚗 Run Run Backend Server`);
+    console.log(`📍 Host: ${HOST}:${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`⏰ Started: ${new Date().toISOString()}`);
+    console.log('🚀 =============================================\n');
+    console.log('Server is ready to accept connections...\n');
+  });
+}).catch((error) => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
 });
 
 // Graceful shutdown
