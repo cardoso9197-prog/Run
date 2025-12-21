@@ -271,6 +271,87 @@ router.get('/earnings/details', requireDriver, async (req, res) => {
 });
 
 /**
+ * PUT /api/drivers/vehicle
+ * Update driver vehicle information
+ */
+router.put('/vehicle', requireDriver, async (req, res) => {
+  try {
+    const { vehicleType, licensePlate, make, model, year, color } = req.body;
+
+    console.log('🚗 Vehicle update request:', { vehicleType, licensePlate, make, model, year, color });
+
+    // Get driver ID
+    const driverResult = await query(
+      'SELECT id, vehicle_id FROM drivers WHERE user_id = $1',
+      [req.user.id]
+    );
+
+    if (driverResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Driver not found',
+      });
+    }
+
+    const driver = driverResult.rows[0];
+
+    // Check if driver has a vehicle record
+    if (driver.vehicle_id) {
+      // Update existing vehicle
+      console.log('📝 Updating existing vehicle:', driver.vehicle_id);
+      await query(`
+        UPDATE vehicles
+        SET vehicle_type = COALESCE($1, vehicle_type),
+            license_plate = COALESCE($2, license_plate),
+            make = COALESCE($3, make),
+            model = COALESCE($4, model),
+            year = COALESCE($5, year),
+            color = COALESCE($6, color),
+            updated_at = NOW()
+        WHERE id = $7
+      `, [vehicleType, licensePlate, make, model, year, color, driver.vehicle_id]);
+    } else {
+      // Create new vehicle and link to driver
+      console.log('✨ Creating new vehicle for driver');
+      const vehicleResult = await query(`
+        INSERT INTO vehicles (vehicle_type, license_plate, make, model, year, color)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
+      `, [vehicleType || 'Car', licensePlate, make, model, year, color]);
+
+      const vehicleId = vehicleResult.rows[0].id;
+
+      // Link vehicle to driver
+      await query(
+        'UPDATE drivers SET vehicle_id = $1 WHERE id = $2',
+        [vehicleId, driver.id]
+      );
+    }
+
+    // Also update driver table fields for backward compatibility
+    await query(`
+      UPDATE drivers
+      SET vehicle_type = COALESCE($1, vehicle_type),
+          license_plate = COALESCE($2, license_plate),
+          updated_at = NOW()
+      WHERE user_id = $3
+    `, [vehicleType, licensePlate, req.user.id]);
+
+    console.log('✅ Vehicle updated successfully');
+
+    res.json({
+      success: true,
+      message: 'Vehicle information updated successfully',
+    });
+  } catch (error) {
+    console.error('❌ Update vehicle error:', error);
+    res.status(500).json({
+      error: 'Failed to update vehicle',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/drivers/stats
  * Get driver statistics
  */
