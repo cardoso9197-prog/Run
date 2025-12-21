@@ -33,7 +33,8 @@ export default function BookRideScreen({ navigation }) {
 
   useEffect(() => {
     loadPaymentMethods();
-    requestLocationPermission();
+    // Don't request permission automatically - only when user clicks button
+    // This prevents blank screen if permission fails
   }, []);
 
   useEffect(() => {
@@ -44,62 +45,87 @@ export default function BookRideScreen({ navigation }) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Location permission is needed to use your current location for pickup.'
-        );
+        console.log('Location permission denied');
+        return false;
       }
+      return true;
     } catch (error) {
       console.error('Error requesting location permission:', error);
+      return false;
     }
   };
 
   const getCurrentLocation = async () => {
     setLoadingLocation(true);
     try {
-      const { status } = await Location.getForegroundPermissionsAsync();
+      // Request permission first
+      let { status } = await Location.getForegroundPermissionsAsync();
+      
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Please enable location permission to use your current location.'
-        );
-        setLoadingLocation(false);
-        return;
+        // Try to request permission
+        const permissionResult = await Location.requestForegroundPermissionsAsync();
+        status = permissionResult.status;
+        
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Location permission is needed to use your current location. You can still enter your address manually.'
+          );
+          setLoadingLocation(false);
+          return;
+        }
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      // Get location with timeout
+      const location = await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          timeout: 10000, // 10 second timeout
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Location timeout')), 10000)
+        )
+      ]);
 
       const { latitude, longitude } = location.coords;
       setPickupCoords({ latitude, longitude });
 
-      // Reverse geocode to get address
-      const addresses = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
+      // Try reverse geocoding
+      try {
+        const addresses = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
 
-      if (addresses && addresses.length > 0) {
-        const address = addresses[0];
-        const formattedAddress = [
-          address.name,
-          address.street,
-          address.city,
-          address.region,
-        ]
-          .filter(Boolean)
-          .join(', ');
+        if (addresses && addresses.length > 0) {
+          const address = addresses[0];
+          const formattedAddress = [
+            address.name,
+            address.street,
+            address.city,
+            address.region,
+          ]
+            .filter(Boolean)
+            .join(', ');
 
-        setPickup(formattedAddress || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-        Alert.alert('Success', 'Current location set as pickup!');
-      } else {
+          setPickup(formattedAddress || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          Alert.alert('Success', 'Current location set as pickup!');
+        } else {
+          setPickup(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          Alert.alert('Success', 'Location coordinates set as pickup!');
+        }
+      } catch (geocodeError) {
+        // If geocoding fails, just use coordinates
+        console.log('Geocoding failed, using coordinates:', geocodeError);
         setPickup(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-        Alert.alert('Success', 'Location coordinates set as pickup!');
+        Alert.alert('Success', 'Location set! You can edit the address if needed.');
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      Alert.alert('Error', 'Failed to get your current location. Please try again.');
+      Alert.alert(
+        'Location Unavailable', 
+        'Could not get your location. Please enter your pickup address manually.'
+      );
     } finally {
       setLoadingLocation(false);
     }
