@@ -148,7 +148,7 @@
 16. Enter Dropoff Address: "Bissau Airport"
 17. Select vehicle: RunRun (or any other)
 18. Wait ~1 second
-19. See fare estimate appear (e.g., "1,500 XOF")
+19. See fare estimate appear (e.g., "2,000 XOF")
 20. Verify distance and duration shown
 21. Tap "Request Ride" button
 22. Button shows "Requesting..." with spinner
@@ -202,7 +202,7 @@
     - Subtitle: "1 ride nearby" (the one passenger requested)
     - See ride card with:
       • Vehicle type tag (RunRun)
-      • Fare in green (1,500 XOF)
+      • Fare in green (2,000 XOF)
       • Pickup address with 📍
       • Dropoff address with 🎯
       • Distance to pickup
