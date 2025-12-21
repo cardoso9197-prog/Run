@@ -28,12 +28,19 @@ export default function App() {
 
   useEffect(() => {
     checkAuthStatus();
+    
+    // Listen for storage changes (when user logs in/out)
+    const interval = setInterval(checkAuthStatus, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkAuthStatus = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      setIsLoggedIn(!!token);
+      const newAuthState = !!token;
+      if (newAuthState !== isLoggedIn) {
+        setIsLoggedIn(newAuthState);
+      }
     } catch (error) {
       console.error('Error checking auth status:', error);
     } finally {

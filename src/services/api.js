@@ -45,7 +45,7 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   verifyOTP: (data) => api.post('/auth/verify-otp', data),
   resendOTP: (data) => api.post('/auth/resend-otp', data),
-  getProfile: () => api.get('/auth/profile'),
+  getProfile: () => api.get('/auth/me'), // Fixed: use /auth/me endpoint
   updateProfile: (data) => api.put('/auth/profile', data),
 };
 
@@ -54,6 +54,8 @@ export const passengerAPI = {
   updateProfile: (data) => api.put('/passengers/profile', data),
   getPaymentMethods: () => api.get('/payment-methods'),
   addPaymentMethod: (data) => api.post('/payment-methods', data),
+  addCardPaymentMethod: (data) => api.post('/payment-methods/card', data),
+  addMobilePaymentMethod: (data) => api.post('/payment-methods/mobile', data),
   updatePaymentMethod: (id, data) => api.put(`/payment-methods/${id}`, data),
   deletePaymentMethod: (id) => api.delete(`/payment-methods/${id}`),
   setDefaultPaymentMethod: (id) => api.put(`/payment-methods/${id}/default`),

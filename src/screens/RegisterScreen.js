@@ -51,12 +51,31 @@ export default function RegisterScreen({ navigation }) {
         role: 'passenger',
       });
 
-      Alert.alert('Success', 'Account created! Please login.', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Login'),
-        },
-      ]);
+      // Registration successful - navigate to OTP screen
+      if (response.data.success && response.data.otp) {
+        // Show OTP in alert for testing (remove in production)
+        Alert.alert(
+          'OTP Sent!',
+          `Your verification code is: ${response.data.otp}\n\nEnter this code on the next screen.`,
+          [
+            {
+              text: 'Continue',
+              onPress: () => navigation.navigate('OTPVerification', {
+                phoneNumber: response.data.phoneNumber || formattedPhone,
+                otp: response.data.otp, // Pass OTP for auto-fill (testing only)
+              }),
+            },
+          ]
+        );
+      } else {
+        // Shouldn't happen, but fallback to login
+        Alert.alert('Success', 'Account created! Please login.', [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]);
+      }
     } catch (error) {
       Alert.alert(
         'Registration Failed',

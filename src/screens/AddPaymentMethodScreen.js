@@ -7,22 +7,63 @@ export default function AddPaymentMethodScreen({ navigation }) {
   const { t } = useTranslation();
   const [type, setType] = useState('card');
   const [cardNumber, setCardNumber] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [expiryMonth, setExpiryMonth] = useState('');
+  const [expiryYear, setExpiryYear] = useState('');
+  const [cvv, setCvv] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleAdd = async () => {
+    // Validation
+    if (type === 'card') {
+      if (!cardNumber || !cardholderName || !expiryMonth || !expiryYear || !cvv) {
+        Alert.alert('Error', 'Please fill all card fields');
+        return;
+      }
+      if (cardNumber.replace(/\s/g, '').length < 13) {
+        Alert.alert('Error', 'Invalid card number');
+        return;
+      }
+    } else {
+      if (!phoneNumber) {
+        Alert.alert('Error', 'Please enter phone number');
+        return;
+      }
+      // Format phone number
+      const formattedPhone = phoneNumber.startsWith('+245') ? phoneNumber : `+245${phoneNumber.replace(/\D/g, '')}`;
+      if (!formattedPhone.match(/^\+245\d{7,9}$/)) {
+        Alert.alert('Error', 'Invalid phone number format. Use +245XXXXXXXXX');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const data = type === 'card'
-        ? { type, card_number: cardNumber, card_brand: cardNumber.startsWith('4') ? 'Visa' : 'Mastercard' }
-        : { type, phone_number: phoneNumber };
+      if (type === 'card') {
+        await passengerAPI.addCardPaymentMethod({
+          cardNumber: cardNumber.replace(/\s/g, ''),
+          cardholderName,
+          expiryMonth: parseInt(expiryMonth),
+          expiryYear: parseInt(expiryYear),
+          cvv,
+        });
+      } else {
+        const formattedPhone = phoneNumber.startsWith('+245') ? phoneNumber : `+245${phoneNumber.replace(/\D/g, '')}`;
+        await passengerAPI.addMobilePaymentMethod({
+          type,
+          mobileNumber: formattedPhone,
+          accountName: accountName || cardholderName,
+        });
+      }
       
-      await passengerAPI.addPaymentMethod(data);
-      Alert.alert('Success', 'Payment method added', [
+      Alert.alert('Success', 'Payment method added successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add payment method');
+      console.error('Error adding payment method:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to add payment method');
     } finally {
       setLoading(false);
     }
@@ -55,6 +96,15 @@ export default function AddPaymentMethodScreen({ navigation }) {
 
         {type === 'card' ? (
           <View>
+            <Text style={styles.label}>Cardholder Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="John Doe"
+              value={cardholderName}
+              onChangeText={setCardholderName}
+              autoCapitalize="words"
+            />
+            
             <Text style={styles.label}>Card Number</Text>
             <TextInput
               style={styles.input}
@@ -64,9 +114,55 @@ export default function AddPaymentMethodScreen({ navigation }) {
               onChangeText={setCardNumber}
               maxLength={19}
             />
+            
+            <View style={styles.row}>
+              <View style={styles.halfInput}>
+                <Text style={styles.label}>Expiry Month</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="MM"
+                  keyboardType="number-pad"
+                  value={expiryMonth}
+                  onChangeText={setExpiryMonth}
+                  maxLength={2}
+                />
+              </View>
+              
+              <View style={styles.halfInput}>
+                <Text style={styles.label}>Expiry Year</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="YYYY"
+                  keyboardType="number-pad"
+                  value={expiryYear}
+                  onChangeText={setExpiryYear}
+                  maxLength={4}
+                />
+              </View>
+            </View>
+            
+            <Text style={styles.label}>CVV</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="123"
+              keyboardType="number-pad"
+              value={cvv}
+              onChangeText={setCvv}
+              maxLength={4}
+              secureTextEntry
+            />
           </View>
         ) : (
           <View>
+            <Text style={styles.label}>Account Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Your Name"
+              value={accountName}
+              onChangeText={setAccountName}
+              autoCapitalize="words"
+            />
+            
             <Text style={styles.label}>Phone Number</Text>
             <TextInput
               style={styles.input}
@@ -102,7 +198,9 @@ const styles = StyleSheet.create({
   typeText: { fontSize: 14, fontWeight: '600' },
   label: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
   input: { borderWidth: 1, borderColor: '#DDD', borderRadius: 10, padding: 15, fontSize: 16, marginBottom: 20 },
-  button: { backgroundColor: '#FF6B00', padding: 18, borderRadius: 10, alignItems: 'center' },
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  halfInput: { flex: 1, marginRight: 10 },
+  button: { backgroundColor: '#FF6B00', padding: 18, borderRadius: 10, alignItems: 'center', marginTop: 10 },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
 });

@@ -54,6 +54,7 @@ export default function HomeScreen({ navigation }) {
         onPress: async () => {
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userRole');
+          // Navigate immediately after clearing storage
           navigation.reset({
             index: 0,
             routes: [{ name: 'Welcome' }],

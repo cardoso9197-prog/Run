@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { authAPI } from '../services/api';
+import { authAPI, passengerAPI } from '../services/api';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -15,19 +15,31 @@ export default function ProfileScreen() {
   const loadProfile = async () => {
     try {
       const response = await authAPI.getProfile();
-      setProfile(response.data);
+      const userData = response.data.user;
+      const profileData = userData.profile || {};
+      
+      setProfile({
+        name: profileData.name || '',
+        email: profileData.email || '',
+        phone: userData.phoneNumber || '',
+      });
     } catch (error) {
       console.error('Error loading profile:', error);
+      Alert.alert('Error', 'Failed to load profile');
     }
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      await authAPI.updateProfile(profile);
-      Alert.alert('Success', 'Profile updated');
+      await passengerAPI.updateProfile({
+        name: profile.name,
+        email: profile.email,
+      });
+      Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }

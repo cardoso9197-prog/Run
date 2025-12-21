@@ -13,8 +13,11 @@ import { authAPI } from '../services/api';
 
 export default function OTPVerificationScreen({ route, navigation }) {
   const { t } = useTranslation();
-  const { phone } = route.params || {};
-  const [otp, setOtp] = useState('');
+  const { phone, phoneNumber, otp: receivedOtp } = route.params || {};
+  const finalPhone = phoneNumber || phone;
+  
+  // Auto-fill OTP for testing (if provided)
+  const [otp, setOtp] = useState(receivedOtp || '');
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
@@ -25,17 +28,24 @@ export default function OTPVerificationScreen({ route, navigation }) {
 
     setLoading(true);
     try {
-      const response = await authAPI.verifyOTP({ phone, otp });
+      const response = await authAPI.verifyOTP({ 
+        phoneNumber: finalPhone,
+        phone: finalPhone, // Send both for compatibility
+        otp 
+      });
       
       if (response.data.token) {
         await AsyncStorage.setItem('userToken', response.data.token);
+        await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+        
+        // Navigate immediately - no Alert callback delay
         navigation.reset({
           index: 0,
           routes: [{ name: 'Home' }],
         });
       }
     } catch (error) {
-      Alert.alert('Error', 'Invalid OTP code');
+      Alert.alert('Error', error.response?.data?.message || 'Invalid OTP code');
     } finally {
       setLoading(false);
     }
@@ -43,7 +53,7 @@ export default function OTPVerificationScreen({ route, navigation }) {
 
   const handleResend = async () => {
     try {
-      await authAPI.resendOTP({ phone });
+      await authAPI.resendOTP({ phone: finalPhone });
       Alert.alert('Success', 'OTP sent again');
     } catch (error) {
       Alert.alert('Error', 'Failed to resend OTP');
@@ -54,7 +64,7 @@ export default function OTPVerificationScreen({ route, navigation }) {
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>{t('enterOTP')}</Text>
-        <Text style={styles.subtitle}>Sent to {phone}</Text>
+        <Text style={styles.subtitle}>Sent to {finalPhone}</Text>
 
         <TextInput
           style={styles.input}

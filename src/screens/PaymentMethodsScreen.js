@@ -15,9 +15,11 @@ export default function PaymentMethodsScreen({ navigation }) {
   const loadPaymentMethods = async () => {
     try {
       const response = await passengerAPI.getPaymentMethods();
-      setPaymentMethods(response.data);
+      // Backend returns { success: true, paymentMethods: [...] }
+      setPaymentMethods(response.data.paymentMethods || []);
     } catch (error) {
       console.error('Error loading payment methods:', error);
+      Alert.alert('Error', 'Failed to load payment methods');
     }
   };
 
