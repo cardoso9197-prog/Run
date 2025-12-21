@@ -526,14 +526,34 @@ async function ensurePaymentMethodsTable() {
     if (!tableCheck.rows[0].exists) {
       console.log('📦 Creating payment_methods table...');
       
-      // Create payment_method ENUM
-      await pool.query(`
-        DO $$ BEGIN
-          CREATE TYPE payment_method AS ENUM ('card', 'orange_money', 'mtn_momo');
-        EXCEPTION
-          WHEN duplicate_object THEN null;
-        END $$;
+      // Check if payment_method ENUM exists and has 'card' value
+      const enumCheck = await pool.query(`
+        SELECT e.enumlabel
+        FROM pg_type t 
+        JOIN pg_enum e ON t.oid = e.enumtypid  
+        WHERE t.typname = 'payment_method'
+        ORDER BY e.enumsortorder;
       `);
+      
+      const enumValues = enumCheck.rows.map(r => r.enumlabel);
+      console.log('📋 Existing payment_method ENUM values:', enumValues);
+      
+      // If ENUM exists but doesn't have 'card', we need to add it
+      if (enumValues.length > 0 && !enumValues.includes('card')) {
+        console.log('🔧 Adding "card" value to payment_method ENUM...');
+        await pool.query(`ALTER TYPE payment_method ADD VALUE IF NOT EXISTS 'card';`);
+        console.log('✅ "card" value added to ENUM');
+      } else if (enumValues.length === 0) {
+        // Create new ENUM with all values
+        console.log('📦 Creating payment_method ENUM...');
+        await pool.query(`
+          DO $$ BEGIN
+            CREATE TYPE payment_method AS ENUM ('card', 'orange_money', 'mtn_momo');
+          EXCEPTION
+            WHEN duplicate_object THEN null;
+          END $$;
+        `);
+      }
       
       // Create table
       await pool.query(`
@@ -581,6 +601,7 @@ async function ensurePaymentMethodsTable() {
     }
   } catch (error) {
     console.error('⚠️  Error checking/creating payment_methods table:', error.message);
+    console.error('Stack:', error.stack);
     // Don't crash the server, just log the error
   }
 }
