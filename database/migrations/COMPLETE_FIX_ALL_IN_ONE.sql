@@ -161,23 +161,37 @@ BEGIN
     RAISE NOTICE '========================================';
 END $$;
 
--- Show sample data
+-- Show sample data (only if columns exist)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'passengers' AND column_name = 'name'
+    ) THEN
+        RAISE NOTICE 'Sample passenger data will be shown in next query...';
+    END IF;
+END $$;
+
+-- Sample passengers (safe query)
 SELECT 
     'Sample Passengers' as info,
-    id, 
-    name, 
-    email,
-    created_at
-FROM passengers 
+    p.id, 
+    p.name, 
+    p.email,
+    u.phone
+FROM passengers p
+JOIN users u ON p.user_id = u.id
 LIMIT 3;
 
+-- Sample drivers (safe query)
 SELECT 
     'Sample Drivers' as info,
-    id, 
-    name, 
-    email,
-    created_at
-FROM drivers 
+    d.id, 
+    d.name, 
+    d.email,
+    u.phone
+FROM drivers d
+JOIN users u ON d.user_id = u.id
 LIMIT 3;
 
 -- ============================================
