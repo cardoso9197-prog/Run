@@ -24,7 +24,8 @@ export default function HomeScreen({ navigation }) {
   const loadUserData = async () => {
     try {
       const response = await authAPI.getProfile();
-      setUserName(response.data.name);
+      const name = response.data.user?.profile?.name || response.data.name || 'User';
+      setUserName(name);
     } catch (error) {
       console.error('Error loading profile:', error);
     }
