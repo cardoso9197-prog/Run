@@ -143,7 +143,7 @@ router.post('/verify-otp', async (req, res) => {
       // Use stored userData or fallback to request body
       const finalUserType = userData.userType || userType || 'passenger';
       const finalName = userData.name || name;
-      const finalEmail = userData.email || '';
+      const finalEmail = userData.email || null;  // Use NULL for missing emails
       const finalPassword = userData.password || '';
 
       if (!finalUserType || !['passenger', 'driver'].includes(finalUserType)) {
