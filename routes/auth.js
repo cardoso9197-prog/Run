@@ -178,14 +178,16 @@ router.post('/verify-otp', async (req, res) => {
         // Create passenger or driver profile
         if (finalUserType === 'passenger') {
           await client.query(
-            'INSERT INTO passengers (user_id) VALUES ($1)',
-            [newUserId]
+            'INSERT INTO passengers (user_id, name, email) VALUES ($1, $2, $3)',
+            [newUserId, finalName.trim(), finalEmail || null]
           );
         } else if (finalUserType === 'driver') {
           await client.query(
-            'INSERT INTO drivers (user_id, vehicle_type, license_plate, license_number) VALUES ($1, $2, $3, $4)',
+            'INSERT INTO drivers (user_id, name, email, vehicle_type, license_plate, license_number) VALUES ($1, $2, $3, $4, $5, $6)',
             [
               newUserId,
+              finalName.trim(),
+              finalEmail || null,
               vehicleType || 'Car',
               licensePlate || 'TEMP_' + Date.now(),
               'TEMP_' + Date.now()
