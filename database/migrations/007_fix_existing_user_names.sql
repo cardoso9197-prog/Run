@@ -6,7 +6,30 @@
 --          before the name storage fix with names from users table
 -- ============================================
 
--- Step 1: Check how many users need fixing
+-- IMPORTANT: Run migration 006 and 006b FIRST to add name columns!
+
+-- Step 1: Check how many users need fixing (only if columns exist)
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'passengers' AND column_name = 'name'
+    ) THEN
+        RAISE NOTICE 'Checking passengers...';
+    ELSE
+        RAISE EXCEPTION 'ERROR: Run migration 006 first - passengers.name column does not exist!';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'drivers' AND column_name = 'name'
+    ) THEN
+        RAISE NOTICE 'Checking drivers...';
+    ELSE
+        RAISE EXCEPTION 'ERROR: Run migration 006b first - drivers.name column does not exist!';
+    END IF;
+END $$;
+
 SELECT 
     'Passengers without names' as issue,
     COUNT(*) as count
