@@ -171,7 +171,7 @@ router.post('/verify-otp', async (req, res) => {
         // Create base user
         const userRes = await client.query(
           'INSERT INTO users (name, email, phone, password, user_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-          [finalName.trim(), finalEmail, phoneNumber, hashedPassword, finalUserType]
+          [finalName.trim(), finalEmail || null, phoneNumber, hashedPassword, finalUserType]
         );
         const newUserId = userRes.rows[0].id;
 
