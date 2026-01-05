@@ -74,7 +74,12 @@ export default function RideHistory() {
       }))
       setRides(transformedRides)
     } else {
-      setError(`Falha ao carregar corridas: ${result.error}`)
+      // Handle case when backend is not available - show empty state instead of error
+      if (result.error?.includes('Not found') || result.error?.includes('fetch')) {
+        setRides([])
+      } else {
+        setError(`Falha ao carregar corridas: ${result.error}`)
+      }
     }
     
     setLoading(false)
