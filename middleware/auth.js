@@ -108,3 +108,29 @@ module.exports = {
   requirePassenger,
   requireAdmin,
 };
+
+/**
+ * Check if user has one of the required roles
+ */
+/**
+ * Check if user has one of the required roles
+ */
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user.user_type)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Access denied',
+      });
+    }
+    next();
+  };
+};
+
+module.exports = {
+  authenticateToken,
+  requireDriver,
+  requirePassenger,
+  requireAdmin,
+  requireRole,
+};

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Run Run Backend Server
  * Main server file for Guinea-Bissau ride sharing platform
  * Developer: Edivaldo Cardoso
@@ -7,12 +7,12 @@
 
 // Global error handlers
 process.on('uncaughtException', (error) => {
-  console.error('âŒ Uncaught Exception:', error);
+  console.error('❌ Uncaught Exception:', error);
   console.error(error.stack);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('âŒ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 const express = require('express');
@@ -21,7 +21,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
-const pool = require('./database/db-railway-fixed');
+const { pool } = require('./database/db');
 const authRoutes = require('./routes/auth');
 const rideRoutes = require('./routes/rides');
 const driverRoutes = require('./routes/drivers');
@@ -110,12 +110,12 @@ const activeConnections = {
 };
 
 io.on('connection', (socket) => {
-  console.log(`âœ… Client connected: ${socket.id}`);
+  console.log(`✅ Client connected: ${socket.id}`);
 
   // Driver goes online
   socket.on('driver:online', async (data) => {
     const { driverId, latitude, longitude } = data;
-    console.log(`ðŸš— Driver ${driverId} went online`);
+    console.log(`🚗 Driver ${driverId} went online`);
 
     // Store driver socket
     activeConnections.drivers.set(driverId, socket.id);
@@ -143,7 +143,7 @@ io.on('connection', (socket) => {
   // Driver goes offline
   socket.on('driver:offline', async (data) => {
     const { driverId } = data;
-    console.log(`ðŸš— Driver ${driverId} went offline`);
+    console.log(`🚗 Driver ${driverId} went offline`);
 
     // Remove driver socket
     activeConnections.drivers.delete(driverId);
@@ -199,7 +199,7 @@ io.on('connection', (socket) => {
   // Passenger connects
   socket.on('passenger:connect', (data) => {
     const { passengerId } = data;
-    console.log(`ðŸ‘¤ Passenger ${passengerId} connected`);
+    console.log(`👤 Passenger ${passengerId} connected`);
     activeConnections.passengers.set(passengerId, socket.id);
     socket.passengerId = passengerId;
   });
@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
   // Ride request from passenger
   socket.on('ride:request', async (data) => {
     const { rideId } = data;
-    console.log(`ðŸ“ž Ride request ${rideId}`);
+    console.log(`📞 Ride request ${rideId}`);
 
     try {
       // Get ride details
@@ -277,7 +277,7 @@ io.on('connection', (socket) => {
   // Driver accepts ride
   socket.on('ride:accept', async (data) => {
     const { rideId, driverId } = data;
-    console.log(`âœ… Driver ${driverId} accepted ride ${rideId}`);
+    console.log(`✅ Driver ${driverId} accepted ride ${rideId}`);
 
     try {
       // Update ride status
@@ -350,7 +350,7 @@ io.on('connection', (socket) => {
   // Driver arrived at pickup
   socket.on('ride:arrived', async (data) => {
     const { rideId } = data;
-    console.log(`ðŸŽ¯ Driver arrived at pickup for ride ${rideId}`);
+    console.log(`🎯 Driver arrived at pickup for ride ${rideId}`);
 
     try {
       const result = await pool.query(
@@ -373,7 +373,7 @@ io.on('connection', (socket) => {
   // Ride started
   socket.on('ride:start', async (data) => {
     const { rideId } = data;
-    console.log(`ðŸš€ Ride ${rideId} started`);
+    console.log(`🚀 Ride ${rideId} started`);
 
     try {
       const result = await pool.query(
@@ -396,7 +396,7 @@ io.on('connection', (socket) => {
   // Ride completed
   socket.on('ride:complete', async (data) => {
     const { rideId, actualDistance, actualDuration } = data;
-    console.log(`ðŸ Ride ${rideId} completed`);
+    console.log(`🏁 Ride ${rideId} completed`);
 
     try {
       const result = await pool.query(
@@ -438,7 +438,7 @@ io.on('connection', (socket) => {
   // Ride cancelled
   socket.on('ride:cancel', async (data) => {
     const { rideId, cancelledBy, reason } = data;
-    console.log(`âŒ Ride ${rideId} cancelled by ${cancelledBy}`);
+    console.log(`❌ Ride ${rideId} cancelled by ${cancelledBy}`);
 
     try {
       const result = await pool.query(
@@ -577,7 +577,7 @@ io.on('connection', (socket) => {
   });
   // Handle disconnection
   socket.on('disconnect', async () => {
-    console.log(`âŒ Client disconnected: ${socket.id}`);
+    console.log(`❌ Client disconnected: ${socket.id}`);
 
     // If driver, set to offline
     if (socket.driverId) {
@@ -625,7 +625,7 @@ app.use((req, res) => {
 // Auto-migration: Create payment_methods table if it doesn't exist
 async function ensurePaymentMethodsTable() {
   try {
-    console.log('ðŸ”§ Checking payment_methods setup...');
+    console.log('🔧 Checking payment_methods setup...');
     
     // ALWAYS check payment_method ENUM first (even if table exists)
     const enumCheck = await pool.query(`
@@ -637,16 +637,16 @@ async function ensurePaymentMethodsTable() {
     `);
     
     const enumValues = enumCheck.rows.map(r => r.enumlabel);
-    console.log('ðŸ“‹ Existing payment_method ENUM values:', enumValues);
+    console.log('📋 Existing payment_method ENUM values:', enumValues);
     
     // If ENUM exists but doesn't have 'card', add it
     if (enumValues.length > 0 && !enumValues.includes('card')) {
-      console.log('ðŸ”§ Adding "card" value to payment_method ENUM...');
+      console.log('🔧 Adding "card" value to payment_method ENUM...');
       await pool.query(`ALTER TYPE payment_method ADD VALUE IF NOT EXISTS 'card';`);
-      console.log('âœ… "card" value added to ENUM');
+      console.log('✅ "card" value added to ENUM');
     } else if (enumValues.length === 0) {
       // Create new ENUM with all values
-      console.log('ðŸ“¦ Creating payment_method ENUM...');
+      console.log('📦 Creating payment_method ENUM...');
       await pool.query(`
         DO $$ BEGIN
           CREATE TYPE payment_method AS ENUM ('card', 'orange_money', 'mtn_momo');
@@ -654,9 +654,9 @@ async function ensurePaymentMethodsTable() {
           WHEN duplicate_object THEN null;
         END $$;
       `);
-      console.log('âœ… payment_method ENUM created');
+      console.log('✅ payment_method ENUM created');
     } else if (enumValues.includes('card')) {
-      console.log('âœ… payment_method ENUM has all required values');
+      console.log('✅ payment_method ENUM has all required values');
     }
     
     // Now check if table exists
@@ -668,7 +668,7 @@ async function ensurePaymentMethodsTable() {
     `);
     
     if (!tableCheck.rows[0].exists) {
-      console.log('ðŸ“¦ Creating payment_methods table...');
+      console.log('📦 Creating payment_methods table...');
       
       // Create table
       await pool.query(`
@@ -710,12 +710,12 @@ async function ensurePaymentMethodsTable() {
         CREATE INDEX IF NOT EXISTS idx_payment_methods_default ON payment_methods(user_id, is_default);
       `);
       
-      console.log('âœ… payment_methods table created successfully!');
+      console.log('✅ payment_methods table created successfully!');
     } else {
-      console.log('âœ… payment_methods table already exists');
+      console.log('✅ payment_methods table already exists');
     }
   } catch (error) {
-    console.error('âš ï¸  Error checking/creating payment_methods table:', error.message);
+    console.error('⚠️  Error checking/creating payment_methods table:', error.message);
     console.error('Stack:', error.stack);
     // Don't crash the server, just log the error
   }
@@ -726,7 +726,7 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 
 server.on('error', (error) => {
-  console.error('âŒ Server error:', error);
+  console.error('❌ Server error:', error);
   if (error.code === 'EADDRINUSE') {
     console.error(`Port ${PORT} is already in use`);
   }
@@ -736,16 +736,16 @@ server.on('error', (error) => {
 // Run migrations and start server
 ensurePaymentMethodsTable().then(() => {
   server.listen(PORT, HOST, () => {
-    console.log('\nðŸš€ =============================================');
-    console.log(`ðŸš— Run Run Backend Server`);
-    console.log(`ðŸ“ Host: ${HOST}:${PORT}`);
-    console.log(`ðŸŒ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`â° Started: ${new Date().toISOString()}`);
-    console.log('ðŸš€ =============================================\n');
+    console.log('\n🚀 =============================================');
+    console.log(`🚗 Run Run Backend Server`);
+    console.log(`📍 Host: ${HOST}:${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`⏰ Started: ${new Date().toISOString()}`);
+    console.log('🚀 =============================================\n');
     console.log('Server is ready to accept connections...\n');
   });
 }).catch((error) => {
-  console.error('âŒ Failed to start server:', error);
+  console.error('❌ Failed to start server:', error);
   process.exit(1);
 });
 
