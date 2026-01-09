@@ -74,7 +74,7 @@ export default function DownloadSection() {
                   <h3 className="text-2xl font-bold">
                     Run Run <span className="text-primary-500">{selectedApp === 'passenger' ? 'Passageiro' : 'Motorista'}</span>
                   </h3>
-                  <p className="text-gray-400">Versão 1.0.1 (Corrigida)</p>
+                  <p className="text-gray-400">Versão 1.0</p>
                 </div>
               </div>
 
@@ -86,7 +86,7 @@ export default function DownloadSection() {
 
               <div className="flex flex-wrap gap-3">
                 <span className="bg-green-500/20 border border-green-500/30 px-3 py-1 rounded-full text-sm text-green-400">
-                  ✓ Autenticação Corrigida
+                  ✓ Autenticação
                 </span>
                 <span className="bg-primary-500/20 border border-primary-500/30 px-3 py-1 rounded-full text-sm text-primary-400">
                   ✓ GPS em Tempo Real
