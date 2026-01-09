@@ -40,7 +40,7 @@ const botResponses: { [key: string]: string } = {
     'Para se tornar motorista Run Run:\n\n1. Baixe o app Run Run Motorista ou cadastre-se em runrungb.com/motorista\n2. Crie sua conta com seus dados\n3. Adicione as informações do veículo\n4. Envie os documentos necessários (CNH, documento do veículo, seguro, foto de perfil, 4 fotos do veículo)\n5. Aguarde a verificação (24-48h)\n\nRequisitos: Ter mais de 21 anos, CNH válida, veículo em bom estado, celular com GPS.',
   
   'perdi um objeto no carro': 
-    'Lamentamos saber que você perdeu algo! Para recuperar:\n\n1. Abra o app e vá em "Histórico de Corridas"\n2. Selecione a corrida onde perdeu o objeto\n3. Toque em "Reportar problema"\n4. Escolha "Objeto perdido"\n\nEntraremos em contato com o motorista para ajudar na recuperação.\n\n📞 Ou ligue: +245 955 971 275',
+    'Lamentamos saber que você perdeu algo! Para recuperar:\n\n1. Abra o app e vá em "Histórico de Corridas"\n2. Selecione a corrida onde perdeu o objeto\n3. Toque em "Reportar problema"\n4. Escolha "Objeto perdido"\n\nEntraremos em contato com o motorista para ajudar na recuperação.\n\n📞 Ou ligue: +245 955 971 275 / +245 955 981 398',
   
   'minha corrida foi cobrada incorretamente': 
     'Vamos resolver isso! Para contestar uma cobrança:\n\n1. Abra o app e vá em "Histórico"\n2. Selecione a corrida em questão\n3. Toque em "Reportar problema"\n4. Escolha "Problema com cobrança"\n5. Descreva o problema\n\nNossa equipe analisará e responderá em até 24 horas.\n\n📧 Email: suporte@runrungb.com',
@@ -52,13 +52,13 @@ const botResponses: { [key: string]: string } = {
     'Após cada corrida, você pode avaliar o motorista:\n\n1. Ao final da corrida, aparecerá a tela de avaliação\n2. Selecione de 1 a 5 estrelas\n3. Adicione um comentário (opcional)\n4. Toque em "Enviar"\n\n⭐ Suas avaliações ajudam a manter a qualidade do serviço!',
   
   'o motorista não chegou': 
-    'Sentimos muito pelo inconveniente! Aqui está o que fazer:\n\n1. Verifique se o endereço de embarque está correto\n2. Tente ligar para o motorista pelo app\n3. Se não conseguir contato, cancele a corrida\n4. Reporte o problema em "Histórico" > "Reportar problema"\n\n📞 Suporte: +245 955 971 275',
+    'Sentimos muito pelo inconveniente! Aqui está o que fazer:\n\n1. Verifique se o endereço de embarque está correto\n2. Tente ligar para o motorista pelo app\n3. Se não conseguir contato, cancele a corrida\n4. Reporte o problema em "Histórico" > "Reportar problema"\n\n📞 Suporte: +245 955 971 275 / +245 955 981 398',
   
   'como funciona o preço?': 
     'O preço das corridas é calculado automaticamente:\n\n📍 Tarifa base da região\n📏 Distância do percurso\n🚗 Tipo de veículo (Moto, Normal ou Premium)\n\nO valor estimado é mostrado ANTES de confirmar a corrida - sem surpresas!\n\n💡 Dica: A tarifa pode variar conforme a demanda em horários de pico.',
   
   'falar com atendente': 
-    'Um de nossos atendentes vai te ajudar! 👋\n\nVocê pode nos contactar por:\n\n📞 Telefone: +245 955 971 275\n📧 Email: suporte@runrungb.com\n💬 WhatsApp: +245 955 971 275\n\nHorário de atendimento: 24 horas, 7 dias por semana.',
+    'Um de nossos atendentes vai te ajudar! 👋\n\nVocê pode nos contactar por:\n\n📞 Telefone: +245 955 971 275 / +245 955 981 398\n📧 Email: suporte@runrungb.com\n💬 WhatsApp: +245 955 971 275 / +245 955 981 398\n\nHorário de atendimento: 24 horas, 7 dias por semana.',
 }
 
 export default function SupportChat({ isOpen, onClose }: SupportChatProps) {
@@ -112,7 +112,7 @@ export default function SupportChat({ isOpen, onClose }: SupportChatProps) {
       }
 
       if (!response) {
-        response = 'Obrigado pela sua mensagem! 😊\n\nNão encontrei uma resposta automática para sua pergunta. Um de nossos atendentes irá responder em breve.\n\nEnquanto isso, você pode:\n📞 Ligar: +245 955 971 275\n📧 Email: suporte@runrungb.com'
+        response = 'Obrigado pela sua mensagem! 😊\n\nNão encontrei uma resposta automática para sua pergunta. Um de nossos atendentes irá responder em breve.\n\nEnquanto isso, você pode:\n📞 Ligar: +245 955 971 275 / +245 955 981 398\n📧 Email: suporte@runrungb.com'
       }
 
       const botMessage: Message = {

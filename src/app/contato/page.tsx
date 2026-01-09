@@ -77,6 +77,9 @@ export default function ContactPage() {
               <a href="tel:+245955971275" className="text-primary-400 hover:text-primary-300 font-medium block">
                 +245 955 971 275
               </a>
+              <a href="tel:+245955981398" className="text-primary-400 hover:text-primary-300 font-medium block mt-2">
+                +245 955 981 398
+              </a>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6">
