@@ -42,11 +42,11 @@ const faqs = [
   },
   {
     question: 'O motorista não chegou, o que fazer?',
-    answer: 'Se o motorista não aparecer:\n\n1. Verifique se o endereço está correto\n2. Tente ligar para o motorista pelo app\n3. Se não conseguir contato, cancele a corrida\n4. Reporte em "Histórico" > "Reportar problema"\n\n📞 Suporte: +245 95xxxxxxxxx / +245 96xxxxxxxxx',
+    answer: 'Se o motorista não aparecer:\n\n1. Verifique se o endereço está correto\n2. Tente ligar para o motorista pelo app\n3. Se não conseguir contato, cancele a corrida\n4. Reporte em "Histórico" > "Reportar problema"\n\n📞 Suporte: +245 955 971 275',
   },
   {
     question: 'Como entro em contato com o suporte?',
-    answer: 'Você pode nos contatar por:\n\n• Chat no app ou site (24/7)\n• Telefone: +245 95xxxxxxxxx / +245 96xxxxxxxxx\n• Email: suporte@runrungb.com\n• WhatsApp: +245 95xxxxxxxxx\n\nEstamos sempre prontos para ajudar!',
+    answer: 'Você pode nos contatar por:\n\n• Chat no app ou site (24/7)\n• Telefone: +245 955 971 275\n• Email: suporte@runrungb.com\n• WhatsApp: +245 955 971 275\n\nEstamos sempre prontos para ajudar!',
   },
 ]
 
