@@ -35,4 +35,80 @@ pool.query('SELECT NOW() as t, version() as v')
 process.on('SIGTERM', async () => { await pool.end(); });
 process.on('SIGINT', async () => { await pool.end(); process.exit(0); });
 
-module.exports = pool;
+/**
+ * Execute a SQL query
+ * @param {string} text - SQL query text
+ * @param {Array} params - Query parameters
+ * @returns {Promise} Query result
+ */
+const query = async (text, params) => {
+  const start = Date.now();
+  try {
+    const result = await pool.query(text, params);
+    const duration = Date.now() - start;
+    console.log('✅ Query executed', { text: text.substring(0, 50), duration, rows: result.rowCount });
+    return result;
+  } catch (error) {
+    console.error('❌ Query error:', error.message);
+    console.error('Query:', text);
+    console.error('Params:', params);
+    throw error;
+  }
+};
+
+/**
+ * Get a client from the pool (for transactions)
+ * @returns {Promise} PostgreSQL client
+ */
+const getClient = async () => {
+  const client = await pool.connect();
+  const query = client.query;
+  const release = client.release;
+
+  // Set a timeout of 5 seconds, after which we will log this client's last query
+  const timeout = setTimeout(() => {
+    console.error('⚠️ A client has been checked out for more than 5 seconds!');
+  }, 5000);
+
+  // Monkey patch the query method to keep track of the last query executed
+  client.query = (...args) => {
+    client.lastQuery = args;
+    return query.apply(client, args);
+  };
+
+  client.release = () => {
+    clearTimeout(timeout);
+    client.query = query;
+    client.release = release;
+    return release.apply(client);
+  };
+
+  return client;
+};
+
+/**
+ * Execute a transaction
+ * @param {Function} callback - Function to execute within transaction
+ * @returns {Promise} Transaction result
+ */
+const transaction = async (callback) => {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+module.exports = {
+  pool,
+  query,
+  getClient,
+  transaction
+};
