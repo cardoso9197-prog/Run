@@ -8,12 +8,12 @@ import { Smartphone, Download, Apple, Play } from 'lucide-react'
 // App download URLs - Updated January 9, 2026 with latest builds
 const APP_URLS = {
   passenger: {
-    android: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/9339d9e3-ce96-4dee-9e93-7a9f0a0da7df',
-    ios: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/7d26cd1a-1bd6-47e3-ae54-19d5619fe0f6',
+    android: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/7b1f736d-8d8f-4447-8851-e19eb7eaa3a2',
+    ios: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/8e599d75-c3b8-49c7-9fd7-2b209cf18755',
   },
   driver: {
-    android: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/817662da-15f1-4947-acd8-7589fa8c099d',
-    ios: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/57fc3245-1561-4226-8b36-edc0f18372e5',
+    android: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/8d9c6e9c-80b7-41e2-9342-445e2ed09adb',
+    ios: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/19907437-bea6-4e06-a997-79092617fd0a',
   },
 }
 
