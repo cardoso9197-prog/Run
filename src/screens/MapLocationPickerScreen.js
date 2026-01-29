@@ -20,19 +20,25 @@ export default function MapLocationPickerScreen({ route, navigation }) {
   });
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mapError, setMapError] = useState(null);
 
   useEffect(() => {
+    console.log('MapLocationPicker mounted for:', locationType);
     getCurrentLocation();
   }, []);
 
   const getCurrentLocation = async () => {
     try {
+      console.log('Requesting location permissions...');
       const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('Location permission status:', status);
       
       if (status === 'granted') {
+        console.log('Getting current position...');
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
         });
+        console.log('Current location:', location.coords);
         
         const newRegion = {
           latitude: location.coords.latitude,
@@ -46,12 +52,15 @@ export default function MapLocationPickerScreen({ route, navigation }) {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         });
+      } else {
+        console.log('Location permission denied, using default location');
       }
     } catch (error) {
-      console.log('Location permission denied or error:', error);
-      // Default to Bissau center
+      console.error('Location error:', error);
+      setMapError('Could not get your location. Using default location.');
     } finally {
       setLoading(false);
+      console.log('Map loading complete');
     }
   };
 
@@ -113,18 +122,30 @@ export default function MapLocationPickerScreen({ route, navigation }) {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B00" />
         <Text style={styles.loadingText}>Loading map...</Text>
+        <Text style={styles.debugText}>Checking location permissions...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {mapError && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>⚠️ {mapError}</Text>
+        </View>
+      )}
+      
       <MapView
         style={styles.map}
         region={region}
         onPress={handleMapPress}
         showsUserLocation={true}
         showsMyLocationButton={true}
+        onMapReady={() => console.log('Map is ready')}
+        onError={(error) => {
+          console.error('Map error:', error);
+          setMapError('Map failed to load. Check your internet connection.');
+        }}
       >
         {selectedLocation && (
           <Marker
@@ -177,6 +198,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
+  },
+  debugText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: '#999',
+  },
+  errorBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FF6B00',
+    padding: 10,
+    zIndex: 1000,
+  },
+  errorText: {
+    color: '#FFF',
+    textAlign: 'center',
+    fontSize: 12,
   },
   map: {
     flex: 1,

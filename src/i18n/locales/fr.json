@@ -56,5 +56,19 @@
   "driver": "Chauffeur",
   "rating": "Évaluation",
   "rateDriver": "Évaluer le chauffeur",
-  "viewReceipt": "Voir le reçu"
+  "viewReceipt": "Voir le reçu",
+  "aboutApp": "À propos de l'app",
+  "appVersion": "Version de l'app",
+  "developer": "Développeur",
+  "founderTitle": "Fondateur et Développeur Principal",
+  "company": "Entreprise",
+  "supportEmail": "E-mail de support",
+  "hours": "Heures",
+  "monFri": "Lun-Ven: 8h00 - 18h00",
+  "sat": "Sam: 9h00 - 14h00",
+  "frequentlyAskedQuestions": "Questions fréquemment posées",
+  "cancelRideQuestion": "Comment annuler une course?",
+  "cancelRideAnswer": "Allez à Course Active et appuyez sur \"Annuler la course\"",
+  "paymentMethodsQuestion": "Quels modes de paiement sont acceptés?",
+  "paymentMethodsAnswer": "Visa, Mastercard, Orange Money, MTN Money"
 }

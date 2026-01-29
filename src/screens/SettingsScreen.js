@@ -36,6 +36,34 @@ export default function SettingsScreen() {
             trackColor={{ false: '#767577', true: '#FF6B00' }}
           />
         </View>
+
+        <Text style={styles.sectionTitle}>{t('aboutApp')}</Text>
+        <View style={styles.aboutContainer}>
+          <View style={styles.aboutRow}>
+            <Text style={styles.aboutLabel}>{t('appVersion')}:</Text>
+            <Text style={styles.aboutValue}>1.0.1</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.aboutRow}>
+            <Text style={styles.aboutLabel}>{t('developer')}:</Text>
+            <Text style={styles.aboutValue}>Edivaldo Cardoso</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.aboutRow}>
+            <Text style={styles.aboutLabel}>{t('founderTitle')}:</Text>
+            <Text style={styles.aboutValue}>Edivaldo Cardoso</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.aboutRow}>
+            <Text style={styles.aboutLabel}>{t('company')}:</Text>
+            <Text style={styles.aboutValue}>Run-Run Guiné-Bissau</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.aboutRow}>
+            <Text style={styles.aboutLabel}>{t('supportEmail')}:</Text>
+            <Text style={[styles.aboutValue, styles.linkText]}>suporte@runrungb.com</Text>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -50,4 +78,10 @@ const styles = StyleSheet.create({
   optionText: { fontSize: 16, fontWeight: '600' },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#F5F5F5', borderRadius: 10 },
   switchLabel: { fontSize: 16 },
+  aboutContainer: { backgroundColor: '#F5F5F5', borderRadius: 10, padding: 15 },
+  aboutRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+  aboutLabel: { fontSize: 15, fontWeight: '600', color: '#666' },
+  aboutValue: { fontSize: 15, color: '#000', fontWeight: '500', textAlign: 'right', flex: 1, marginLeft: 10 },
+  linkText: { color: '#FF6B00' },
+  divider: { height: 1, backgroundColor: '#E0E0E0', marginVertical: 5 },
 });

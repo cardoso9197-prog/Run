@@ -56,5 +56,19 @@
   "driver": "Motorista",
   "rating": "Avaliação",
   "rateDriver": "Avaliar motorista",
-  "viewReceipt": "Ver recibo"
+  "viewReceipt": "Ver recibo",
+  "aboutApp": "Sobre o App",
+  "appVersion": "Versão do App",
+  "developer": "Desenvolvedor",
+  "founderTitle": "Fundador e Desenvolvedor Líder",
+  "company": "Empresa",
+  "supportEmail": "E-mail de Suporte",
+  "hours": "Horário",
+  "monFri": "Seg-Sex: 8:00 - 18:00",
+  "sat": "Sáb: 9:00 - 14:00",
+  "frequentlyAskedQuestions": "Perguntas Frequentes",
+  "cancelRideQuestion": "Como cancelar uma corrida?",
+  "cancelRideAnswer": "Vá para Corrida Ativa e toque em \"Cancelar Corrida\"",
+  "paymentMethodsQuestion": "Quais métodos de pagamento são aceitos?",
+  "paymentMethodsAnswer": "Visa, Mastercard, Orange Money, MTN Money"
 }

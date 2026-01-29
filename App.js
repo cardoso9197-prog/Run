@@ -20,6 +20,8 @@ import TripHistoryScreen from './src/screens/TripHistoryScreen';
 import TripDetailsScreen from './src/screens/TripDetailsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import SupportScreen from './src/screens/SupportScreen';
+import BusinessAccountScreen from './src/screens/BusinessAccountScreen';
+import InvoicesListScreen from './src/screens/InvoicesListScreen';
 
 const Stack = createStackNavigator();
 
@@ -142,6 +144,16 @@ export default function App() {
               name="Support" 
               component={SupportScreen}
               options={{ title: 'Support' }}
+            />
+            <Stack.Screen 
+              name="BusinessAccount" 
+              component={BusinessAccountScreen}
+              options={{ title: 'Business Account' }}
+            />
+            <Stack.Screen 
+              name="InvoicesList" 
+              component={InvoicesListScreen}
+              options={{ title: 'Invoices' }}
             />
           </>
         )}

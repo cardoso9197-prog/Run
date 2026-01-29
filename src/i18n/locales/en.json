@@ -56,5 +56,19 @@
   "driver": "Driver",
   "rating": "Rating",
   "rateDriver": "Rate Driver",
-  "viewReceipt": "View Receipt"
+  "viewReceipt": "View Receipt",
+  "aboutApp": "About App",
+  "appVersion": "App Version",
+  "developer": "Developer",
+  "founderTitle": "Founder & Lead Developer",
+  "company": "Company",
+  "supportEmail": "Support Email",
+  "hours": "Hours",
+  "monFri": "Mon-Fri: 8:00 AM - 6:00 PM",
+  "sat": "Sat: 9:00 AM - 2:00 PM",
+  "frequentlyAskedQuestions": "Frequently Asked Questions",
+  "cancelRideQuestion": "How do I cancel a ride?",
+  "cancelRideAnswer": "Go to Active Ride and tap \"Cancel Ride\"",
+  "paymentMethodsQuestion": "What payment methods are accepted?",
+  "paymentMethodsAnswer": "Visa, Mastercard, Orange Money, MTN Money"
 }

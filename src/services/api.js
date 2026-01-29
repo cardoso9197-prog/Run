@@ -15,13 +15,21 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('userToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log('Token added to request:', config.url);
+      } else {
+        console.log('No token found for request:', config.url);
+      }
+    } catch (error) {
+      console.error('Error getting token from storage:', error);
     }
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -30,10 +38,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.error('API Response Error:', error?.response?.status, error?.response?.data);
+    
     if (error.response?.status === 401) {
-      // Token expired, logout user
-      await AsyncStorage.removeItem('userToken');
-      await AsyncStorage.removeItem('userRole');
+      // Token expired or invalid, logout user
+      console.log('401 Unauthorized - Clearing auth data');
+      await AsyncStorage.multiRemove(['userToken', 'userRole', 'userData']);
     }
     return Promise.reject(error);
   }

@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI } from '../services/api';
@@ -23,8 +24,10 @@ export default function BookRideScreen({ navigation, route }) {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [bookingError, setBookingError] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentRideId, setCurrentRideId] = useState(null);
 
   // Handle location selected from map
   useEffect(() => {
@@ -92,6 +95,8 @@ export default function BookRideScreen({ navigation, route }) {
     }
 
     setLoading(true);
+    setBookingError(null);
+    setCurrentRideId(null);
     try {
       const response = await rideAPI.createRide({
         pickupAddress: pickupLocation.name,
@@ -103,21 +108,51 @@ export default function BookRideScreen({ navigation, route }) {
         vehicleType: vehicleType,
         paymentMethodId: selectedPayment.id,
       });
-
-      Alert.alert('Success', 'Ride requested! Looking for drivers...', [
-        {
-          text: 'OK',
-          onPress: () =>
-            navigation.navigate('ActiveRide', { rideId: response.data.id }),
-        },
-      ]);
+      // Try to extract ride id from a few possible response shapes
+      const rideId = response.data?.id || response.data?.ride?.id || response.data?.rideId;
+      if (rideId) {
+        // Store the ride ID so user can cancel the search
+        setCurrentRideId(rideId);
+        // Navigate to ActiveRide which will show "Looking for driver..." when status is 'requested'
+        navigation.navigate('ActiveRide', { rideId });
+        // Reset state after navigation
+        setLoading(false);
+        setCurrentRideId(null);
+      } else {
+        // If backend did not return an id, surface a clear error so the user can retry
+        console.warn('Ride created but no id returned:', response.data);
+        setBookingError('Corrida solicitada, mas o ID não foi retornado. Tente ver sua viagem em Histórico.');
+        setLoading(false);
+      }
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Failed to book ride'
-      );
-    } finally {
+      console.error('Error creating ride:', error);
+      const message = error.response?.data?.message || error.message || 'Falha ao reservar a corrida';
+      setBookingError(message);
       setLoading(false);
+      setCurrentRideId(null);
+    }
+  };
+
+  const handleCancelSearch = async () => {
+    if (!currentRideId) {
+      // If no ride ID yet, just stop the loading state
+      setLoading(false);
+      setBookingError(null);
+      return;
+    }
+
+    try {
+      // Cancel the ride request via API
+      await rideAPI.cancelRide(currentRideId);
+      setLoading(false);
+      setCurrentRideId(null);
+      setBookingError(null);
+      Alert.alert('Cancelado', 'Busca por motorista cancelada com sucesso.');
+    } catch (error) {
+      console.error('Error cancelling ride:', error);
+      setLoading(false);
+      setCurrentRideId(null);
+      Alert.alert('Erro', 'Falha ao cancelar a busca. Por favor, tente novamente.');
     }
   };
 
@@ -151,6 +186,7 @@ export default function BookRideScreen({ navigation, route }) {
   console.log('Rendering BookRideScreen UI');
 
   return (
+    <>
     <ScrollView style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>📍 Pickup Location</Text>
@@ -246,11 +282,45 @@ export default function BookRideScreen({ navigation, route }) {
           disabled={loading}
         >
           <Text style={styles.bookButtonText}>
-            {loading ? 'Booking...' : t('confirmBooking')}
+            {loading ? 'Procurando motorista...' : t('confirmBooking')}
           </Text>
         </TouchableOpacity>
+
+        {/* Inline booking error and retry */}
+        {bookingError && (
+          <View style={{ marginTop: 12 }}>
+            <Text style={{ color: '#FF0000', textAlign: 'center' }}>{bookingError}</Text>
+            <TouchableOpacity
+              style={[styles.retryButton, { alignSelf: 'center', marginTop: 10 }]}
+              onPress={() => {
+                setBookingError(null);
+              }}
+            >
+              <Text style={styles.retryButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </ScrollView>
+
+    {/* Full-screen modal shown while booking to make state explicit */}
+    <Modal visible={loading} transparent animationType="fade">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalCard}>
+          <ActivityIndicator size="large" color="#FF6B00" />
+          <Text style={styles.modalText}>
+            Procurando motorista...{'\n'}Por favor aguarde
+          </Text>
+          <TouchableOpacity
+            style={styles.cancelSearchButton}
+            onPress={handleCancelSearch}
+          >
+            <Text style={styles.cancelSearchButtonText}>Cancelar Busca</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -430,5 +500,44 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '80%',
+    backgroundColor: '#FFF',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 10,
+  },
+  modalText: {
+    marginTop: 12,
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#333',
+    lineHeight: 22,
+  },
+  cancelSearchButton: {
+    marginTop: 20,
+    backgroundColor: '#FF0000',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    minWidth: 150,
+  },
+  cancelSearchButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

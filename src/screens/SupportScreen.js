@@ -5,42 +5,47 @@ import { useTranslation } from 'react-i18next';
 export default function SupportScreen() {
   const { t } = useTranslation();
 
-  const handleCall = () => {
-    Linking.openURL('tel:+245955971275');
-  };
+  const numbers = [
+    { label: '+245 966 084 539', value: 'tel:+245966084539' },
+    { label: '+245 957 338 295', value: 'tel:+245957338295' },
+  ];
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>📞 {t('contactSupport')}</Text>
-        
+
+        <View style={styles.infoSection}>
+          <Text style={styles.label}>Telefones:</Text>
+          {numbers.map((num) => (
+            <TouchableOpacity key={num.value} onPress={() => Linking.openURL(num.value)}>
+              <Text style={[styles.value, styles.linkText]}>{num.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <View style={styles.infoSection}>
           <Text style={styles.label}>Office Address:</Text>
           <Text style={styles.value}>{t('officeAddress')}</Text>
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.label}>Phone:</Text>
-          <Text style={styles.value}>{t('officePhone')}</Text>
-          <Text style={styles.value}>+245 955 981 398</Text>
+          <Text style={styles.label}>{t('supportEmail')}:</Text>
+          <Text style={[styles.value, styles.linkText]}>suporte@runrungb.com</Text>
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.label}>Hours:</Text>
-          <Text style={styles.value}>Mon-Fri: 8:00 AM - 6:00 PM</Text>
-          <Text style={styles.value}>Sat: 9:00 AM - 2:00 PM</Text>
+          <Text style={styles.label}>{t('hours')}:</Text>
+          <Text style={styles.value}>{t('monFri')}</Text>
+          <Text style={styles.value}>{t('sat')}</Text>
         </View>
 
-        <TouchableOpacity style={styles.callButton} onPress={handleCall}>
-          <Text style={styles.callButtonText}>{t('callNow')}</Text>
-        </TouchableOpacity>
-
         <View style={styles.faqSection}>
-          <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
-          <Text style={styles.faqItem}>Q: How do I cancel a ride?</Text>
-          <Text style={styles.faqAnswer}>A: Go to Active Ride and tap "Cancel Ride"</Text>
-          <Text style={styles.faqItem}>Q: What payment methods are accepted?</Text>
-          <Text style={styles.faqAnswer}>A: Visa, Mastercard, Orange Money, MTN Money</Text>
+          <Text style={styles.faqTitle}>{t('frequentlyAskedQuestions')}</Text>
+          <Text style={styles.faqItem}>{t('cancelRideQuestion')}</Text>
+          <Text style={styles.faqAnswer}>{t('cancelRideAnswer')}</Text>
+          <Text style={styles.faqItem}>{t('paymentMethodsQuestion')}</Text>
+          <Text style={styles.faqAnswer}>{t('paymentMethodsAnswer')}</Text>
         </View>
       </View>
     </ScrollView>

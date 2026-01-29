@@ -53,13 +53,19 @@ export default function HomeScreen({ navigation }) {
         text: 'Logout',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.removeItem('userToken');
-          await AsyncStorage.removeItem('userRole');
-          // Navigate immediately after clearing storage
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-          });
+          try {
+            // Clear all auth data
+            await AsyncStorage.multiRemove(['userToken', 'userRole', 'userData']);
+
+            // Force navigation to Welcome screen and reset stack
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Welcome' }],
+            });
+          } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
         },
       },
     ]);
@@ -115,6 +121,14 @@ export default function HomeScreen({ navigation }) {
         >
           <Text style={styles.menuIcon}>📋</Text>
           <Text style={styles.menuText}>{t('tripHistory')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('BusinessAccount')}
+        >
+          <Text style={styles.menuIcon}>🏢</Text>
+          <Text style={styles.menuText}>Business Account</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
