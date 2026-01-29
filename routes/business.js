@@ -5,17 +5,15 @@ const db = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const PDFDocument = require('pdfkit');
 const nodemailer = require('nodemailer');
-const fs = require('fs');
-const path = require('path');
 
-// Configure email transporter (update with your SMTP settings)
+// Configure email transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false,
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: process.env.EMAIL_PORT || 587,
+  secure: process.env.EMAIL_SECURE === 'true' || false,
   auth: {
-    user: process.env.SMTP_USER || 'suporte@runrungb.com',
-    pass: process.env.SMTP_PASS || 'your-email-password'
+    user: process.env.EMAIL_USER || 'info@runrungb.com',
+    pass: process.env.EMAIL_PASS || 'your-email-password'
   }
 });
 
@@ -238,17 +236,17 @@ router.post('/invoices/generate/:rideId', authenticateToken, async (req, res) =>
       ]
     );
 
-    // Generate PDF
-    const pdfPath = await generateInvoicePDF(invoice, businessAccount, ride);
+    // Generate PDF (returns Base64 string)
+    const pdfBase64 = await generateInvoicePDF(invoice, businessAccount, ride);
     
-    // Update invoice with PDF path
+    // Update invoice with PDF Base64 in database
     await db.query(
       'UPDATE invoices SET pdf_url = $1, pdf_generated = true WHERE id = $2',
-      [pdfPath, invoice.id]
+      [pdfBase64, invoice.id]
     );
 
-    // Send email
-    await sendInvoiceEmail(businessAccount.invoice_email, pdfPath, invoice);
+    // Send email with PDF
+    await sendInvoiceEmail(businessAccount.invoice_email, pdfBase64, invoice);
 
     // Update sent status
     await db.query(
@@ -261,7 +259,7 @@ router.post('/invoices/generate/:rideId', authenticateToken, async (req, res) =>
       message: 'Invoice generated and sent successfully',
       invoice: {
         ...invoice,
-        pdf_url: pdfPath
+        pdf_available: true
       }
     });
   } catch (error) {
@@ -322,14 +320,23 @@ router.get('/invoices/:id/download', authenticateToken, async (req, res) => {
 
     const invoice = result.rows[0];
 
-    if (!invoice.pdf_url || !fs.existsSync(invoice.pdf_url)) {
+    if (!invoice.pdf_url || !invoice.pdf_generated) {
       return res.status(404).json({
         success: false,
-        message: 'PDF file not found'
+        message: 'PDF not generated yet'
       });
     }
 
-    res.download(invoice.pdf_url, `Invoice-${invoice.invoice_number}.pdf`);
+    // Convert Base64 back to PDF buffer
+    const pdfBuffer = Buffer.from(invoice.pdf_url, 'base64');
+
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoice_number}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Send PDF buffer
+    res.send(pdfBuffer);
   } catch (error) {
     console.error('Error downloading invoice:', error);
     res.status(500).json({
@@ -339,22 +346,21 @@ router.get('/invoices/:id/download', authenticateToken, async (req, res) => {
   }
 });
 
-// Helper: Generate PDF
+// Helper: Generate PDF and return Base64 string (for database storage)
 async function generateInvoicePDF(invoice, businessAccount, ride) {
   return new Promise((resolve, reject) => {
     try {
-      const invoicesDir = path.join(__dirname, '../invoices');
-      if (!fs.existsSync(invoicesDir)) {
-        fs.mkdirSync(invoicesDir, { recursive: true });
-      }
-
-      const filename = `invoice-${invoice.invoice_number}.pdf`;
-      const filepath = path.join(invoicesDir, filename);
-
       const doc = new PDFDocument({ margin: 50 });
-      const stream = fs.createWriteStream(filepath);
+      const chunks = [];
 
-      doc.pipe(stream);
+      // Collect PDF data in memory
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        const base64PDF = pdfBuffer.toString('base64');
+        resolve(base64PDF);
+      });
+      doc.on('error', (error) => reject(error));
 
       // Header
       doc.fontSize(20).text('RUN-RUN GUINÉ-BISSAU', { align: 'center' });
@@ -400,28 +406,20 @@ async function generateInvoicePDF(invoice, businessAccount, ride) {
       doc.moveDown();
 
       // Footer
-      doc.fontSize(8).text('Run-Run Guiné-Bissau | suporte@runrungb.com | +245 955 981 398', { align: 'center' });
+      doc.fontSize(8).text('Run-Run Guiné-Bissau | info@runrungb.com | +245 955 981 398', { align: 'center' });
       doc.text('© 2026 KCDIGITALS. Todos os Direitos Reservados.', { align: 'center' });
 
       doc.end();
-
-      stream.on('finish', () => {
-        resolve(filepath);
-      });
-
-      stream.on('error', (error) => {
-        reject(error);
-      });
     } catch (error) {
       reject(error);
     }
   });
 }
 
-// Helper: Send invoice email
-async function sendInvoiceEmail(email, pdfPath, invoice) {
+// Helper: Send invoice email (pdfBase64 is Base64 string)
+async function sendInvoiceEmail(email, pdfBase64, invoice) {
   const mailOptions = {
-    from: process.env.SMTP_USER || 'suporte@runrungb.com',
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'info@runrungb.com',
     to: email,
     subject: `Fatura Run-Run Nº ${invoice.invoice_number}`,
     html: `
@@ -436,13 +434,14 @@ async function sendInvoiceEmail(email, pdfPath, invoice) {
       <p>Obrigado por utilizar Run-Run!</p>
       <br>
       <p>Run-Run Guiné-Bissau<br>
-      Email: suporte@runrungb.com<br>
+      Email: info@runrungb.com<br>
       Telefone: +245 955 981 398</p>
     `,
     attachments: [
       {
         filename: `Invoice-${invoice.invoice_number}.pdf`,
-        path: pdfPath
+        content: Buffer.from(pdfBase64, 'base64'),
+        contentType: 'application/pdf'
       }
     ]
   };
