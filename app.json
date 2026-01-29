@@ -61,6 +61,12 @@
             "minSdkVersion": 23
           }
         }
+      ],
+      [
+        "react-native-maps",
+        {
+          "googleMapsApiKey": "AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI"
+        }
       ]
     ]
   }
