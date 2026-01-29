@@ -18,7 +18,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.runrun.passenger",
       "config": {
-        "googleMapsApiKey": "AIzaSyDSXNYRIguNd4_6fT__XTbop_XShakpgsM"
+        "googleMapsApiKey": "AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI"
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Run Run needs your location to find nearby drivers and show your position on the map.",
@@ -38,7 +38,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDSXNYRIguNd4_6fT__XTbop_XShakpgsM"
+          "apiKey": "AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI"
         }
       }
     },
