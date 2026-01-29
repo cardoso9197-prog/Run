@@ -571,4 +571,43 @@ router.get('/rides', requireAdmin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/withdrawals
+ * Get all withdrawal requests for admin panel
+ */
+router.get('/withdrawals', requireAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 100 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const result = await query(`
+      SELECT id, driver_id, amount, net_amount, withdrawal_method, mobile_number, status, frequency, transaction_id, requested_at, completed_at, error_message
+      FROM withdrawals
+      ORDER BY requested_at DESC
+      LIMIT $1 OFFSET $2
+    `, [parseInt(limit), offset]);
+    // Format to match frontend Withdrawal interface
+    const withdrawals = result.rows.map(w => ({
+      id: w.id,
+      driverId: w.driver_id,
+      amount: parseFloat(w.amount),
+      netAmount: parseFloat(w.net_amount),
+      method: w.withdrawal_method,
+      mobileNumber: w.mobile_number,
+      status: w.status,
+      frequency: w.frequency,
+      transactionId: w.transaction_id,
+      requestedAt: w.requested_at,
+      completedAt: w.completed_at,
+      errorMessage: w.error_message
+    }));
+    res.json(withdrawals);
+  } catch (error) {
+    console.error('Get admin withdrawals error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch withdrawals',
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;

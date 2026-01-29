@@ -31,6 +31,7 @@ const paymentMethodsRoutes = require('./routes/paymentMethods');
 const withdrawalRoutes = require('./routes/withdrawals');
 const adminRoutes = require('./routes/admin');
 const chatRoutes = require('./routes/chat');
+const businessRoutes = require('./routes/business');
 // Import chat data for Socket.IO
 // const { chatSessions, chatMessages } = chatRoutes;
 const { authenticateToken } = require('./middleware/auth');
@@ -98,6 +99,7 @@ app.use('/api/payment-methods', authenticateToken, paymentMethodsRoutes);
 app.use('/api/withdrawals', authenticateToken, withdrawalRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api', businessRoutes); // Business accounts and invoices
 
 // ==========================================
 // WebSocket Connection Management
