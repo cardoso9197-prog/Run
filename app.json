@@ -58,14 +58,9 @@
             "compileSdkVersion": 34,
             "targetSdkVersion": 34,
             "buildToolsVersion": "34.0.0",
-            "minSdkVersion": 23
+            "minSdkVersion": 23,
+            "usesCleartextTraffic": true
           }
-        }
-      ],
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI"
         }
       ]
     ]
