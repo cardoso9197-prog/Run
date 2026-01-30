@@ -196,12 +196,12 @@ router.get('/earnings', requireDriver, async (req, res) => {
     }
 
     const result = await query(`
-      SELECT 
+      SELECT
         COUNT(r.id) as total_rides,
         COALESCE(SUM(p.driver_earnings), 0) as total_earnings,
         COALESCE(SUM(p.platform_commission), 0) as total_commission,
         COALESCE(SUM(p.amount), 0) as total_fares,
-        COALESCE(AVG(r.actual_distance_km), 0) as avg_distance,
+        COALESCE(AVG(COALESCE(r.actual_distance_km, r.estimated_distance_km)), 0) as avg_distance,
         COALESCE(AVG(rt.passenger_rating), 0) as avg_rating
       FROM rides r
       LEFT JOIN payments p ON r.id = p.ride_id
