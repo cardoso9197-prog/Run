@@ -100,7 +100,6 @@ router.post('/request', requirePassenger, async (req, res) => {
       dropoffAddress,
       vehicleType = 'RunRun',
       additionalStops = [],
-      paymentMethodId,
     } = req.body;
 
     // Validate required fields
@@ -109,20 +108,6 @@ router.post('/request', requirePassenger, async (req, res) => {
       return res.status(400).json({
         error: 'Missing required ride information',
       });
-    }
-
-    // Validate payment method if provided
-    if (paymentMethodId) {
-      const paymentMethodResult = await query(
-        'SELECT id, type FROM payment_methods WHERE id = $1 AND passenger_id = (SELECT id FROM passengers WHERE user_id = $2)',
-        [paymentMethodId, req.user.id]
-      );
-
-      if (paymentMethodResult.rows.length === 0) {
-        return res.status(400).json({
-          error: 'Invalid payment method',
-        });
-      }
     }
 
     // Get passenger ID
