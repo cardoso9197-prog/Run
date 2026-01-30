@@ -201,7 +201,7 @@ router.get('/earnings', requireDriver, async (req, res) => {
         COALESCE(SUM(p.driver_earnings), 0) as total_earnings,
         COALESCE(SUM(p.platform_commission), 0) as total_commission,
         COALESCE(SUM(p.amount), 0) as total_fares,
-        COALESCE(AVG(r.actual_distance_km), 0) as avg_distance,
+        COALESCE(AVG(r.estimated_distance_km), 0) as avg_distance,
         COALESCE(AVG(rt.passenger_rating), 0) as avg_rating
       FROM rides r
       LEFT JOIN payments p ON r.id = p.ride_id
@@ -245,7 +245,7 @@ router.get('/earnings/details', requireDriver, async (req, res) => {
         r.id,
         r.pickup_address,
         r.dropoff_address,
-        r.actual_distance_km,
+        r.estimated_distance_km as distance_km,
         r.completed_at,
         p.amount as fare,
         p.driver_earnings,
@@ -375,8 +375,8 @@ router.get('/stats', requireDriver, async (req, res) => {
         COUNT(*) FILTER (WHERE status = 'completed') as completed_rides,
         COUNT(*) FILTER (WHERE status = 'cancelled' AND cancelled_by = 'driver') as cancelled_by_me,
         COUNT(*) FILTER (WHERE status = 'cancelled' AND cancelled_by = 'passenger') as cancelled_by_passenger,
-        COALESCE(AVG(actual_distance_km) FILTER (WHERE status = 'completed'), 0) as avg_distance,
-        COALESCE(AVG(actual_duration_minutes) FILTER (WHERE status = 'completed'), 0) as avg_duration,
+        COALESCE(AVG(estimated_distance_km) FILTER (WHERE status = 'completed'), 0) as avg_distance,
+        COALESCE(AVG(estimated_duration_minutes) FILTER (WHERE status = 'completed'), 0) as avg_duration,
         COUNT(*) FILTER (WHERE DATE(completed_at) = CURRENT_DATE) as rides_today,
         COUNT(*) FILTER (WHERE completed_at >= CURRENT_DATE - INTERVAL '7 days') as rides_this_week
       FROM rides
