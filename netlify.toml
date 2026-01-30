@@ -11,11 +11,14 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NEXT_PUBLIC_API_URL = "https://zippy-healing-production-24e4.up.railway.app"
 
-# Use Netlify Next.js Runtime
-# [[plugins]]
-#   package = "@netlify/plugin-nextjs"
+# Custom Domain Configuration
+[[redirects]]
+  from = "https://runrunwebapp.netlify.app/*"
+  to = "https://runrungw.com/:splat"
+  status = 301
+  force = true
 
-# Redirect rules
+# SPA fallback for Next.js static export
 [[redirects]]
   from = "/*"
   to = "/index.html"
