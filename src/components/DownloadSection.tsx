@@ -5,15 +5,15 @@ import Image from 'next/image'
 import { QRCodeSVG } from 'qrcode.react'
 import { Smartphone, Download, Apple, Play } from 'lucide-react'
 
-// App download URLs - Updated January 9, 2026 with latest builds
+// App download URLs - Updated January 30, 2026 with latest production builds
 const APP_URLS = {
   passenger: {
-    android: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/7b1f736d-8d8f-4447-8851-e19eb7eaa3a2',
-    ios: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/8e599d75-c3b8-49c7-9fd7-2b209cf18755',
+    android: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/832240a1-38e4-423b-a7d9-21c14040b79f',
+    ios: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/2a9b4c70-88d2-4eb6-9afe-907c825f684f',
   },
   driver: {
-    android: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/8d9c6e9c-80b7-41e2-9342-445e2ed09adb',
-    ios: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/19907437-bea6-4e06-a997-79092617fd0a',
+    android: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/d1fcaf68-a08b-4baf-bac8-7235e5b5ab40',
+    ios: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/5484669a-8d5f-4406-92b1-e4a7c28be80b',
   },
 }
 
@@ -31,7 +31,7 @@ export default function DownloadSection() {
             Baixe o <span className="text-primary-500">App</span> Agora
           </h2>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Versões mais recentes com correções de autenticação. Disponível para Android e iOS. Escaneie o QR Code ou clique no botão para baixar.
+            Última versão com autenticação corrigida, reserva de corridas otimizada e integração completa com backend Railway. Disponível para Android e iOS.
           </p>
         </div>
 
@@ -80,19 +80,22 @@ export default function DownloadSection() {
 
               <p className="text-gray-300 mb-6">
                 {selectedApp === 'passenger'
-                  ? 'Solicite corridas, acompanhe em tempo real, pague facilmente. Sua viagem começa aqui!'
-                  : 'Ganhe dinheiro sendo seu próprio patrão. Aceite corridas e comece a faturar hoje!'}
+                  ? 'Solicite corridas, acompanhe em tempo real, pague com Orange Money ou MTN Momo. Sistema de reservas otimizado para melhor experiência!'
+                  : 'Ganhe dinheiro sendo seu próprio patrão. Sistema de corridas em tempo real, retiradas via Orange Money. Comece a faturar hoje!'}
               </p>
 
               <div className="flex flex-wrap gap-3">
                 <span className="bg-green-500/20 border border-green-500/30 px-3 py-1 rounded-full text-sm text-green-400">
-                  ✓ Autenticação
+                  ✓ Login Corrigido
+                </span>
+                <span className="bg-green-500/20 border border-green-500/30 px-3 py-1 rounded-full text-sm text-green-400">
+                  ✓ Reservas Otimizadas
                 </span>
                 <span className="bg-primary-500/20 border border-primary-500/30 px-3 py-1 rounded-full text-sm text-primary-400">
                   ✓ GPS em Tempo Real
                 </span>
                 <span className="bg-primary-500/20 border border-primary-500/30 px-3 py-1 rounded-full text-sm text-primary-400">
-                  ✓ Pagamento Seguro
+                  ✓ Pagamento Mobile
                 </span>
                 <span className="bg-primary-500/20 border border-primary-500/30 px-3 py-1 rounded-full text-sm text-primary-400">
                   ✓ Suporte 24/7
