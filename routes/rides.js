@@ -139,15 +139,15 @@ router.post('/request', requirePassenger, async (req, res) => {
 
     const passengerId = passengerResult.rows[0].id;
 
-    // Check for existing active ride
+    // Check for existing active ride (only block if driver has accepted)
     const activeRideResult = await query(
-      'SELECT id FROM rides WHERE passenger_id = $1 AND status NOT IN ($2, $3, $4)',
-      [passengerId, 'completed', 'cancelled', 'failed']
+      'SELECT id FROM rides WHERE passenger_id = $1 AND status IN ($2, $3, $4)',
+      [passengerId, 'accepted', 'arrived', 'started']
     );
 
     if (activeRideResult.rows.length > 0) {
       return res.status(400).json({
-        error: 'You already have an active ride',
+        error: 'You already have an active ride that has been accepted by a driver',
         rideId: activeRideResult.rows[0].id,
       });
     }
@@ -256,10 +256,10 @@ router.get('/active', requirePassenger, async (req, res) => {
       LEFT JOIN vehicles v ON d.vehicle_id = v.id
       LEFT JOIN users u ON d.user_id = u.id
       WHERE r.passenger_id = $1
-        AND r.status NOT IN ($2, $3, $4)
+        AND r.status IN ($2, $3, $4)
       ORDER BY r.requested_at DESC
       LIMIT 1
-    `, [passengerId, 'completed', 'cancelled', 'failed']);
+    `, [passengerId, 'accepted', 'arrived', 'started']);
 
     if (rideResult.rows.length === 0) {
       return res.json({
