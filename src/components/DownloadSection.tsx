@@ -5,15 +5,15 @@ import Image from 'next/image'
 import { QRCodeSVG } from 'qrcode.react'
 import { Smartphone, Download, Apple, Play } from 'lucide-react'
 
-// App download URLs - Updated January 30, 2026 with latest production builds
+// App download URLs - Updated January 30, 2026 with January 29 production builds
 const APP_URLS = {
   passenger: {
-    android: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/832240a1-38e4-423b-a7d9-21c14040b79f',
-    ios: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/2a9b4c70-88d2-4eb6-9afe-907c825f684f',
+    android: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/89e929dc-c89b-4dd3-a9d8-1d7986ef2d2b',
+    ios: 'https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/2f8b9119-2e2a-42b7-9b14-bc6ed9c6247e',
   },
   driver: {
-    android: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/d1fcaf68-a08b-4baf-bac8-7235e5b5ab40',
-    ios: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/5484669a-8d5f-4406-92b1-e4a7c28be80b',
+    android: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/d2176922-2c27-4288-a60d-b1b090f242c0',
+    ios: 'https://expo.dev/accounts/edipro/projects/runrun-driver/builds/94034554-9031-4c5b-b76c-aa82977ad43a',
   },
 }
 
