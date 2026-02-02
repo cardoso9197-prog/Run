@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Run Run Driver",
+    "slug": "runrun-driver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6B00"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.runrun.driver",
+      "config": {
+        "googleMapsApiKey": "AIzaSyDSXNYRIguNd4_6fT__XTbop_XShakpgsM"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Run Run Driver needs your location to show your position to passengers and navigate to pickup/dropoff locations.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Run Run Driver needs background location access to track your location while you're on a ride.",
+        "NSLocationAlwaysUsageDescription": "Run Run Driver needs background location access to track your location while you're on a ride.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "location",
+          "fetch"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FF6B00"
+      },
+      "package": "com.runrun.driver",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b49bb6c3-9462-4e6f-91a5-31e405dff11c"
+      }
+    }
+  }
+}

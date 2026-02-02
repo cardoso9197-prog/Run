@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "Run Run Passenger",
+    "slug": "runrun-passenger",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6B00"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.runrun.passenger",
+      "config": {
+        "googleMapsApiKey": "AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Run Run needs your location to find nearby drivers and show your position on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Run Run needs location access to track your ride in real-time.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FF6B00"
+      },
+      "package": "com.runrun.passenger",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "651cb2ae-ec0f-4709-ad1c-b68dd9f2b813"
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
+            "minSdkVersion": 23,
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ]
+  }
+}
