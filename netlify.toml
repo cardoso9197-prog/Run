@@ -2,6 +2,7 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
+  base = "."
   command = "npm run build"
   publish = "out"
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF . ':(exclude)RunRunDriver' ':(exclude)RunRunPassenger' ':(exclude)backend' ':(exclude)runrun-web'"
@@ -12,6 +13,7 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NEXT_PUBLIC_API_URL = "https://zippy-healing-production-24e4.up.railway.app"
   GIT_SUBMODULE_STRATEGY = "none"
+  NODE_PATH = "."
 
 # Custom Domain Configuration
 [[redirects]]
