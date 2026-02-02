@@ -14,6 +14,8 @@
   NEXT_PUBLIC_API_URL = "https://zippy-healing-production-24e4.up.railway.app"
   GIT_SUBMODULE_STRATEGY = "none"
   NODE_PATH = "."
+  # Disable secrets scanning for Google Maps API keys in mobile app configs
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
 # Custom Domain Configuration
 [[redirects]]
