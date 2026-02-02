@@ -1,99 +1,52 @@
-# ✅ GRADLE BUILD SUCCESS - ISSUE RESOLVED
+# 🔴 GRADLE BUILD FAILURE - SOLUTION
 
-**Build ID:** 89e929dc-c89b-4dd3-a9d8-1d7986ef2d2b
-**Status:** ✅ SUCCESS
-**Platform:** Android APK
+**Build ID:** 6a281c31-e57a-4f62-aff5-5c855fcad41b  
+**Error:** "Gradle build failed with unknown error"  
+**Phase:** Run gradlew  
 **Time:** January 29, 2026
 
 ---
 
-## 🎉 SOLUTION FOUND!
+## 🚨 THE PROBLEM
 
-**Root Cause:** Incompatible expo packages with Expo SDK 51
-
-**The Problem:**
-- `expo-file-system: ^19.0.21` ❌ (incompatible)
-- `expo-sharing: ^14.0.8` ❌ (incompatible)
-
-**The Fix:**
-- `expo-file-system: ~17.0.1` ✅ (SDK 51 compatible)
-- `expo-sharing: ~12.0.1` ✅ (SDK 51 compatible)
-
----
-
-## � WHAT WAS FIXED
-
-### 1. **Package Version Compatibility**
-```bash
-# Removed incompatible versions
-npm uninstall expo-file-system expo-sharing
-
-# Installed SDK 51 compatible versions
-npx expo install expo-file-system expo-sharing
+**Error Message:**
+```
+Gradle build failed with unknown error. 
+See logs for the "Run gradlew" phase for more information.
 ```
 
-### 2. **Google Maps API Key**
-- Updated from: `AIzaSyDSXNYRIguNd4_6fT__XTbop_XShakpgsM`
-- Updated to: `AIzaSyDMeM5ZO0eXyzhyLJzgs-WPh7dhcDNDjhI`
-
-### 3. **Android Build Configuration**
-- Added `expo-build-properties` plugin
-- Configured Android SDK 34 settings
-- Added `usesCleartextTraffic: true`
+**View Full Logs:**
+https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/6a281c31-e57a-4f62-aff5-5c855fcad41b#run-gradlew
 
 ---
 
-## 📱 APK DOWNLOAD LINK
+## 🔍 MOST LIKELY CAUSES
 
-**Android APK:** https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/89e929dc-c89b-4dd3-a9d8-1d7986ef2d2b
+### 1. **Google Maps API Key Restrictions**
 
----
+Your API Key: `AIzaSyDSXNYRIguNd4_6fT__XTbop_XShakpgsM`
 
-## 🚀 NEXT STEPS
+**Problem:** The API key might be:
+- Not enabled for Android builds
+- Missing required APIs
+- Restricted to specific applications
 
-### Build iOS Version
-```powershell
-cd "C:\Users\Colondo Full service\Desktop\Run-Run GW\RunRunPassenger"
-npx eas-cli build --platform ios --profile preview-device
-```
-
-### Build Driver App
-```powershell
-cd "C:\Users\Colondo Full service\Desktop\Run-Run GW\RunRunDriver"
-npx eas-cli build --platform android --profile preview-device
-npx eas-cli build --platform ios --profile preview-device
-```
-
-### Update QR Codes
-- Update `generate-qr-codes.js` with APK/IPA URLs
-- Regenerate QR codes for web download
-
----
-
-## 📊 BUILD HISTORY
-
-| Build ID | Status | Platform | Issue | Resolution |
-|----------|--------|----------|-------|------------|
-| e53c0296 | ❌ Failed | Android | Gradle error | - |
-| 6a281c31 | ❌ Failed | Android | Gradle error | - |
-| 23e24771 | ❌ Failed | Android | Gradle error | - |
-| ddb80b95 | ❌ Failed | Android | Gradle error | - |
-| 708bae01 | ❌ Failed | Android | Gradle error | - |
-| **89e929dc** | ✅ **SUCCESS** | **Android** | **Fixed** | **Compatible packages** |
+**Fix:**
+1. Go to: https://console.cloud.google.com/apis/credentials
+2. Find your API key: `AIzaSyDSXNYRIguNd4_6fT__XTbop_XShakpgsM`
+3. Click "Edit API Key"
+4. Under "Application restrictions":
+   - Select "Android apps"
+   - Add package name: `com.runrun.passenger`
+   - Add SHA-1 certificate fingerprint (get from EAS)
+5. Under "API restrictions":
+   - Ensure these are enabled:
+     - ✅ Maps SDK for Android
+     - ✅ Places API
+     - ✅ Geocoding API
+     - ✅ Directions API
 
 ---
-
-## 💡 LESSONS LEARNED
-
-1. **Always check package compatibility** with Expo SDK versions
-2. **Use `npx expo install`** instead of `npm install` for Expo packages
-3. **expo-file-system and expo-sharing** versions must match SDK requirements
-4. **Google Maps API key** must be properly configured for Android builds
-
----
-
-**© 2026 Run-Run Guiné-Bissau**
-**✅ Android APK Build: SUCCESS**
 
 ### 2. **react-native-maps Configuration Issue**
 

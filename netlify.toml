@@ -4,12 +4,14 @@
 [build]
   command = "npm run build"
   publish = "out"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF . ':(exclude)RunRunDriver' ':(exclude)RunRunPassenger' ':(exclude)backend' ':(exclude)runrun-web'"
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
   NEXT_TELEMETRY_DISABLED = "1"
   NEXT_PUBLIC_API_URL = "https://zippy-healing-production-24e4.up.railway.app"
+  GIT_SUBMODULE_STRATEGY = "none"
 
 # Custom Domain Configuration
 [[redirects]]

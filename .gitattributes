@@ -1,0 +1,12 @@
+# Tell Git LFS to track large files
+*.apk filter=lfs diff=lfs merge=lfs -text
+*.ipa filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+
+# Ignore submodule directories for deployment
+RunRunDriver/** -export-ignore
+RunRunPassenger/** -export-ignore
+backend/** -export-ignore
+runrun-web/** -export-ignore
