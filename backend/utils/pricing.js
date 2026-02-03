@@ -38,14 +38,18 @@ function toRadians(degrees) {
 }
 
 /**
- * Calculate fare for a ride
+ * Calculate fare for a ride with red zone detection
  * @param {number} distanceKm - Distance in kilometers
  * @param {number} durationMinutes - Duration in minutes
  * @param {string} vehicleType - Type of vehicle (RunRun, Moto, Comfort, XL)
  * @param {number} surgeMultiplier - Surge pricing multiplier (default 1.0)
+ * @param {number} pickupLat - Pickup latitude
+ * @param {number} pickupLon - Pickup longitude
+ * @param {number} dropoffLat - Dropoff latitude
+ * @param {number} dropoffLon - Dropoff longitude
  * @returns {object} Fare breakdown with components and total
  */
-async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier = 1.0) {
+async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier = 1.0, pickupLat = null, pickupLon = null, dropoffLat = null, dropoffLon = null) {
   // Base pricing from environment variables or defaults
   const baseFare = parseFloat(process.env.BASE_FARE) || 500;
   const perKmRate = parseFloat(process.env.PER_KM_RATE) || 200;
@@ -56,8 +60,10 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   // Vehicle type multipliers
   const multipliers = {
     RunRun: parseFloat(process.env.RUNRUN_MULTIPLIER) || 1.0,
+    Normal: parseFloat(process.env.RUNRUN_MULTIPLIER) || 1.0,
     Moto: parseFloat(process.env.MOTO_MULTIPLIER) || 0.7,
     Comfort: parseFloat(process.env.COMFORT_MULTIPLIER) || 1.3,
+    Premium: parseFloat(process.env.COMFORT_MULTIPLIER) || 1.3,
     XL: parseFloat(process.env.XL_MULTIPLIER) || 1.5,
   };
 
@@ -70,6 +76,24 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
 
   // Calculate subtotal
   let subtotal = adjustedBaseFare + distanceFare + durationFare;
+
+  // Check for red zones (bad road conditions) and apply 30% surcharge
+  let redZoneSurcharge = 0;
+  let isRedZone = false;
+  let redZoneInfo = null;
+
+  if (pickupLat && pickupLon && dropoffLat && dropoffLon) {
+    const redZones = require('./redZones');
+    const redZoneResult = redZones.calculateRedZoneSurge(pickupLat, pickupLon, dropoffLat, dropoffLon);
+    
+    if (redZoneResult.isRedZone) {
+      isRedZone = true;
+      redZoneInfo = redZoneResult;
+      // Apply 30% surcharge for bad road conditions
+      redZoneSurcharge = subtotal * 0.30;
+      subtotal += redZoneSurcharge;
+    }
+  }
 
   // Apply surge pricing
   const surgeFare = surgeMultiplier > 1.0 ? (subtotal * (surgeMultiplier - 1.0)) : 0;
@@ -85,9 +109,12 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     baseFare: Math.round(adjustedBaseFare),
     distanceFare: Math.round(distanceFare),
     durationFare: Math.round(durationFare),
+    redZoneSurcharge: Math.round(redZoneSurcharge),
     surgeFare: Math.round(surgeFare),
     totalFare: Math.round(totalFare),
     surgeMultiplier,
+    isRedZone,
+    redZoneInfo,
   };
 }
 

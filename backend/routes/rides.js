@@ -13,7 +13,7 @@ const router = express.Router();
 
 /**
  * POST /api/rides/estimate-fare
- * Calculate fare estimate for a ride
+ * Calculate fare estimate for a ride with red zone detection
  * Public endpoint (no auth required for estimation)
  */
 router.post('/estimate-fare', async (req, res) => {
@@ -60,8 +60,17 @@ router.post('/estimate-fare', async (req, res) => {
     // Estimate duration (assume 30 km/h average speed in city)
     const estimatedDuration = Math.ceil((totalDistance / 30) * 60); // minutes
 
-    // Calculate fare
-    const fareDetails = await calculateFare(totalDistance, estimatedDuration, vehicleType);
+    // Calculate fare with red zone detection
+    const fareDetails = await calculateFare(
+      totalDistance, 
+      estimatedDuration, 
+      vehicleType || 'Normal',
+      1.0, // surge multiplier
+      pickupLatitude,
+      pickupLongitude,
+      dropoffLatitude,
+      dropoffLongitude
+    );
 
     res.json({
       success: true,
@@ -71,9 +80,12 @@ router.post('/estimate-fare', async (req, res) => {
         baseFare: fareDetails.baseFare,
         distanceFare: fareDetails.distanceFare,
         durationFare: fareDetails.durationFare,
+        redZoneSurcharge: fareDetails.redZoneSurcharge || 0,
         surgeFare: fareDetails.surgeFare,
         totalFare: fareDetails.totalFare,
         surgeMultiplier: fareDetails.surgeMultiplier,
+        isRedZone: fareDetails.isRedZone || false,
+        redZoneInfo: fareDetails.redZoneInfo || null,
       },
     });
   } catch (error) {
