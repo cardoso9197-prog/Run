@@ -17,9 +17,22 @@ export default function HomeScreen({ navigation }) {
   const [activeRide, setActiveRide] = useState(null);
 
   useEffect(() => {
+    console.log('=== HOMESCREEN MOUNTED ===');
+    checkTokenAvailability();
     loadUserData();
     checkActiveRide();
   }, []);
+
+  const checkTokenAvailability = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      console.log('=== TOKEN AVAILABILITY CHECK ===');
+      console.log('Token in AsyncStorage:', token ? 'YES (length: ' + token.length + ')' : 'NO');
+      console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'N/A');
+    } catch (error) {
+      console.error('Error checking token availability:', error);
+    }
+  };
 
   const loadUserData = async () => {
     console.log('=== LOADING USER PROFILE ===');

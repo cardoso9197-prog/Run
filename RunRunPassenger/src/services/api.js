@@ -50,7 +50,7 @@ api.interceptors.response.use(
     console.log('=== AXIOS RESPONSE SUCCESS ===');
     console.log('Status:', response.status);
     console.log('URL:', response.config?.url);
-    console.log('Response data:', JSON.stringify(response.data).substring(0, 200));
+    console.log('Response data:', response.data ? JSON.stringify(response.data).substring(0, 200) : 'NO DATA');
     console.log('=== RESPONSE SUCCESS COMPLETE ===');
     return response;
   },
@@ -59,20 +59,18 @@ api.interceptors.response.use(
     console.error('Status:', error?.response?.status);
     console.error('URL:', error?.config?.url);
     console.error('Error message:', error?.message);
-    console.error('Response data:', error?.response?.data);
+    console.error('Response data:', error?.response?.data ? JSON.stringify(error.response.data) : 'NO RESPONSE DATA');
     console.error('Is network error:', !error?.response && error?.request);
-
+    
     if (error.response?.status === 401) {
       console.log('401 Unauthorized - clearing auth data');
       await AsyncStorage.multiRemove(['userToken', 'userRole', 'userData']);
     }
-
+    
     console.error('=== RESPONSE ERROR COMPLETE ===');
     return Promise.reject(error);
   }
-);
-
-// Auth APIs
+);// Auth APIs
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
