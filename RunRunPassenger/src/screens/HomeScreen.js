@@ -27,6 +27,7 @@ export default function HomeScreen({ navigation }) {
       console.log('Calling authAPI.getProfile()...');
       const response = await authAPI.getProfile();
       console.log('Profile API response:', JSON.stringify(response.data, null, 2));
+      Alert.alert('Profile Response', `Status: ${response.status}\nData: ${JSON.stringify(response.data).substring(0, 100)}...`);
 
       // Backend returns: { success: true, user: { id, phoneNumber, userType, profile } }
       // Profile contains: { name, email, ... } for passengers

@@ -18,6 +18,11 @@ export default function BookRideScreen({ navigation, route }) {
   console.log('Navigation state:', navigation);
   console.log('Route params:', route.params);
   
+  // Show alert when screen loads
+  React.useEffect(() => {
+    Alert.alert('BookRide Screen', 'BookRide screen loaded successfully!');
+  }, []);
+  
   const { t } = useTranslation();
   const [pickupLocation, setPickupLocation] = useState(null);
   const [dropoffLocation, setDropoffLocation] = useState(null);
@@ -87,6 +92,8 @@ export default function BookRideScreen({ navigation, route }) {
       console.log('Response status:', response.status);
       console.log('Response data:', JSON.stringify(response.data, null, 2));
       
+      Alert.alert('Payment Methods Response', `Status: ${response.status}\nData: ${JSON.stringify(response.data).substring(0, 100)}...`);
+      
       // Backend returns: { success: true, paymentMethods: [...] }
       const methods = response.data.paymentMethods || response.data || [];
       console.log('Payment methods loaded:', methods.length);
@@ -117,6 +124,8 @@ export default function BookRideScreen({ navigation, route }) {
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
+      
+      Alert.alert('Payment Methods Error', `Status: ${error.response?.status || 'Unknown'}\nMessage: ${errorMessage}\nDetails: ${JSON.stringify(error.response?.data || error.message)}`);
       
       setError(errorMessage);
       setPaymentMethods([]);
