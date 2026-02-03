@@ -166,6 +166,14 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.menuText}>{t('support')}</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('DebugLogs')}
+        >
+          <Text style={styles.menuIcon}>🐛</Text>
+          <Text style={styles.menuText}>Debug Logs</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
           <Text style={styles.menuIcon}>🚪</Text>
           <Text style={styles.menuText}>{t('logout')}</Text>

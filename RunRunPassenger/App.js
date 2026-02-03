@@ -22,6 +22,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import SupportScreen from './src/screens/SupportScreen';
 import BusinessAccountScreen from './src/screens/BusinessAccountScreen';
 import InvoicesListScreen from './src/screens/InvoicesListScreen';
+import DebugLogsScreen from './src/screens/DebugLogsScreen';
 
 const Stack = createStackNavigator();
 
@@ -154,6 +155,11 @@ export default function App() {
               name="InvoicesList" 
               component={InvoicesListScreen}
               options={{ title: 'Invoices' }}
+            />
+            <Stack.Screen 
+              name="DebugLogs" 
+              component={DebugLogsScreen}
+              options={{ title: '🐛 Debug Logs' }}
             />
           </>
         )}
