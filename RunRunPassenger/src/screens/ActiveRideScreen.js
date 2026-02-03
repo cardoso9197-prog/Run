@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
@@ -135,16 +136,24 @@ export default function ActiveRideScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B00" />
+        <Text style={styles.loadingText}>🔍 Looking for your ride...</Text>
+        <Text style={styles.loadingSubtext}>Please wait while we load the details</Text>
       </View>
     );
   }
 
   if (!ride) {
     return (
-      <View style={styles.container}>
-        <Text>Ride not found</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>⚠️ Ride not found</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -446,5 +455,42 @@ const styles = StyleSheet.create({
   },
   driverMarkerText: {
     fontSize: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    backgroundColor: '#FF6B00',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
