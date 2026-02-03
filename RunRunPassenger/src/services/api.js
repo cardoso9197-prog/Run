@@ -15,23 +15,26 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    console.log('=== AXIOS REQUEST STARTING ===');
-    console.log('URL:', config.baseURL + config.url);
+    console.log('=== AXIOS REQUEST INTERCEPTOR ===');
+    console.log('Full URL:', config.baseURL + config.url);
     console.log('Method:', config.method?.toUpperCase());
-    console.log('Data:', JSON.stringify(config.data).substring(0, 200));
-    
+    console.log('Request data:', JSON.stringify(config.data).substring(0, 200));
+
     try {
+      console.log('Retrieving token from AsyncStorage...');
       const token = await AsyncStorage.getItem('userToken');
+      console.log('Token retrieved:', token ? 'YES (length: ' + token.length + ')' : 'NO');
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('✅ Token added to request');
+        console.log('✅ Authorization header added');
       } else {
-        console.log('⚠️ No token found for request');
+        console.log('⚠️ No token found - request will be unauthenticated');
       }
     } catch (error) {
-      console.error('❌ Error getting token from storage:', error);
+      console.error('❌ Error retrieving token:', error);
     }
-    
+
     console.log('=== REQUEST INTERCEPTOR COMPLETE ===');
     return config;
   },
@@ -44,28 +47,27 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('=== AXIOS RESPONSE RECEIVED ===');
+    console.log('=== AXIOS RESPONSE SUCCESS ===');
     console.log('Status:', response.status);
     console.log('URL:', response.config?.url);
-    console.log('Data:', JSON.stringify(response.data).substring(0, 200));
-    console.log('=== RESPONSE COMPLETE ===');
+    console.log('Response data:', JSON.stringify(response.data).substring(0, 200));
+    console.log('=== RESPONSE SUCCESS COMPLETE ===');
     return response;
   },
   async (error) => {
-    console.error('=== AXIOS ERROR ===');
+    console.error('=== AXIOS RESPONSE ERROR ===');
     console.error('Status:', error?.response?.status);
     console.error('URL:', error?.config?.url);
-    console.error('Data:', error?.response?.data);
-    console.error('Message:', error?.message);
-    console.error('Network Error:', error?.request && !error?.response);
-    
+    console.error('Error message:', error?.message);
+    console.error('Response data:', error?.response?.data);
+    console.error('Is network error:', !error?.response && error?.request);
+
     if (error.response?.status === 401) {
-      // Token expired or invalid, logout user
-      console.log('401 Unauthorized - Clearing auth data');
+      console.log('401 Unauthorized - clearing auth data');
       await AsyncStorage.multiRemove(['userToken', 'userRole', 'userData']);
     }
-    
-    console.error('=== ERROR COMPLETE ===');
+
+    console.error('=== RESPONSE ERROR COMPLETE ===');
     return Promise.reject(error);
   }
 );
