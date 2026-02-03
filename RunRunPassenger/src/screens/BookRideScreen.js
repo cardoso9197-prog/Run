@@ -14,7 +14,9 @@ import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI } from '../services/api';
 
 export default function BookRideScreen({ navigation, route }) {
-  console.log('BookRideScreen rendering');
+  console.log('=== BOOKRIDESCREEN COMPONENT RENDERED ===');
+  console.log('Navigation state:', navigation);
+  console.log('Route params:', route.params);
   
   const { t } = useTranslation();
   const [pickupLocation, setPickupLocation] = useState(null);
@@ -74,21 +76,57 @@ export default function BookRideScreen({ navigation, route }) {
   }, [vehicleType, pickupLocation, dropoffLocation]);
 
   const loadPaymentMethods = async () => {
+    console.log('=== LOAD PAYMENT METHODS STARTED ===');
     try {
       console.log('Fetching payment methods...');
+      console.log('API URL should be:', 'https://zippy-healing-production-24e4.up.railway.app/api/payment-methods');
+
       const response = await passengerAPI.getPaymentMethods();
-      console.log('Payment methods response:', response.data);
-      const methods = response.data.paymentMethods || [];
+
+      console.log('=== PAYMENT METHODS RESPONSE RECEIVED ===');
+      console.log('Response status:', response.status);
+      console.log('Response data:', JSON.stringify(response.data, null, 2));
+      
+      // Backend returns: { success: true, paymentMethods: [...] }
+      const methods = response.data.paymentMethods || response.data || [];
       console.log('Payment methods loaded:', methods.length);
+      
       setPaymentMethods(methods);
-      const defaultMethod = methods.find((pm) => pm.is_default);
-      setSelectedPayment(defaultMethod || methods[0]);
+      
+      if (methods.length === 0) {
+        console.log('No payment methods found - user needs to add one');
+        setError('No payment methods found. Please add a payment method first.');
+        setSelectedPayment(null);
+      } else {
+        const defaultMethod = methods.find((pm) => pm.isDefault || pm.is_default);
+        setSelectedPayment(defaultMethod || methods[0]);
+        setError(null); // Clear any previous error
+      }
+      
       setInitialLoading(false);
     } catch (error) {
       console.error('Error loading payment methods:', error);
       console.error('Error details:', error.response?.data);
-      setError('Failed to load payment methods');
+      console.error('Error status:', error.response?.status);
+      
+      let errorMessage = 'Failed to load payment methods';
+      if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Payment methods service not available.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setError(errorMessage);
+      setPaymentMethods([]);
+      setSelectedPayment(null);
       setInitialLoading(false);
+      
+      // Show alert for critical errors
+      if (error.response?.status === 401) {
+        Alert.alert('Authentication Error', errorMessage);
+      }
     }
   };
 
@@ -441,14 +479,26 @@ export default function BookRideScreen({ navigation, route }) {
               >
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentType}>
-                    {method.provider === 'orange_money' && '🟠'}
-                    {method.provider === 'mtn_momo' && '🟡'}
-                    {method.provider === 'cash' && '💵'}
+                    {method.type === 'orange_money' && '🟠'}
+                    {method.type === 'mtn_momo' && '🟡'}
+                    {method.type === 'card' && '�'}
                     {' '}
-                    {method.provider.replace('_', ' ').toUpperCase()}
+                    {method.type === 'card' 
+                      ? `${method.cardBrand || 'Card'} ****${method.cardLastFour || '****'}`
+                      : method.type === 'orange_money' 
+                        ? 'Orange Money'
+                        : method.type === 'mtn_momo'
+                          ? 'MTN Mobile Money'
+                          : method.type.replace('_', ' ').toUpperCase()
+                    }
                   </Text>
-                  <Text style={styles.paymentDetails}>{method.account_number}</Text>
-                  {method.is_default && (
+                  <Text style={styles.paymentDetails}>
+                    {method.type === 'card' 
+                      ? `****${method.cardLastFour || '****'}`
+                      : method.mobileNumber || 'N/A'
+                    }
+                  </Text>
+                  {method.isDefault && (
                     <Text style={styles.defaultBadge}>Default</Text>
                   )}
                 </View>
