@@ -186,14 +186,14 @@ export default function BookRideScreen({ navigation, route }) {
     setBookingError(null);
     setCurrentRideId(null);
     
-    console.log('Starting ride booking...');
-    console.log('Pickup:', pickupLocation);
-    console.log('Dropoff:', dropoffLocation);
+    console.log('=== STARTING RIDE BOOKING ===');
+    console.log('Pickup:', JSON.stringify(pickupLocation));
+    console.log('Dropoff:', JSON.stringify(dropoffLocation));
     console.log('Vehicle:', vehicleType);
-    console.log('Payment:', selectedPayment);
+    console.log('Payment:', JSON.stringify(selectedPayment));
     
     try {
-      const response = await rideAPI.createRide({
+      const bookingData = {
         pickupAddress: pickupLocation.name,
         pickupLatitude: pickupLocation.latitude,
         pickupLongitude: pickupLocation.longitude,
@@ -202,38 +202,64 @@ export default function BookRideScreen({ navigation, route }) {
         dropoffLongitude: dropoffLocation.longitude,
         vehicleType: vehicleType,
         paymentMethodId: selectedPayment.id,
-      });
+      };
       
-      console.log('Ride creation response:', response.data);
+      console.log('Booking data:', JSON.stringify(bookingData));
+      console.log('Calling API: POST /rides/request');
+      
+      const response = await rideAPI.createRide(bookingData);
+      
+      console.log('=== API RESPONSE ===');
+      console.log('Status:', response.status);
+      console.log('Data:', JSON.stringify(response.data));
       
       const rideId = response.data?.id || response.data?.ride?.id || response.data?.rideId;
       console.log('Extracted ride ID:', rideId);
       
-      if (rideId) {
-        setCurrentRideId(rideId);
-        console.log('Navigating to ActiveRide with ID:', rideId);
-        
-        // Navigate first, then reset state
-        navigation.navigate('ActiveRide', { rideId });
-        
-        // Small delay to ensure navigation completes before resetting
-        setTimeout(() => {
-          setLoading(false);
-          setCurrentRideId(null);
-        }, 100);
-      } else {
-        console.warn('Ride created but no id returned:', response.data);
-        setBookingError('Ride requested but ID not returned. Check your ride history.');
+      if (!rideId) {
+        console.error('NO RIDE ID IN RESPONSE!');
+        console.error('Full response:', JSON.stringify(response));
+        setBookingError('Ride requested but ID not returned. Please try again.');
         setLoading(false);
+        Alert.alert('Booking Error', 'Could not create ride. Please try again.');
+        return; // STOP HERE - don't navigate
       }
+      
+      // Only navigate if we have a valid ride ID
+      setCurrentRideId(rideId);
+      console.log('✅ SUCCESS! Navigating to ActiveRide with ID:', rideId);
+      
+      // Navigate first, then reset state
+      navigation.navigate('ActiveRide', { rideId });
+      
+      // Small delay to ensure navigation completes before resetting
+      setTimeout(() => {
+        setLoading(false);
+        setCurrentRideId(null);
+      }, 100);
+      
     } catch (error) {
-      console.error('Error creating ride:', error);
-      console.error('Error response:', error.response?.data);
-      const message = error.response?.data?.message || error.message || 'Failed to book ride';
+      console.error('=== BOOKING ERROR ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error response status:', error.response?.status);
+      
+      const message = error.response?.data?.message || 
+                      error.response?.data?.error || 
+                      error.message || 
+                      'Failed to book ride. Please check your connection.';
+      
       setBookingError(message);
       setLoading(false);
       setCurrentRideId(null);
-      Alert.alert('Booking Error', message);
+      
+      Alert.alert(
+        'Booking Failed',
+        message,
+        [{ text: 'OK', onPress: () => console.log('User dismissed error alert') }]
+      );
     }
   };
 
