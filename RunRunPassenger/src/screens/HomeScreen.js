@@ -22,12 +22,23 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const loadUserData = async () => {
+    console.log('=== LOADING USER PROFILE ===');
     try {
+      console.log('Calling authAPI.getProfile()...');
       const response = await authAPI.getProfile();
+      console.log('Profile API response:', JSON.stringify(response.data, null, 2));
+
+      // Backend returns: { success: true, user: { id, phoneNumber, userType, profile } }
+      // Profile contains: { name, email, ... } for passengers
       const name = response.data.user?.profile?.name || response.data.name || 'User';
+      console.log('Extracted user name:', name);
+
       setUserName(name);
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('=== PROFILE LOAD ERROR ===');
+      console.error('Error details:', error);
+      console.error('Error response:', error.response?.data);
+      setUserName('User'); // Fallback
     }
   };
 
