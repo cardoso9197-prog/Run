@@ -42,12 +42,10 @@ export default function LoginScreen({ navigation }) {
       console.log('Login response:', response?.data);
 
       if (response && response.data && response.data.token) {
-        console.log('=== STORING TOKEN ===');
-        console.log('Token to store:', response.data.token.substring(0, 20) + '...');
-        
         // Store token and user info
+        console.log('Storing token in AsyncStorage...');
         await AsyncStorage.setItem('userToken', response.data.token);
-        console.log('Token stored in AsyncStorage');
+        console.log('Token stored successfully');
         
         await AsyncStorage.setItem('userRole', 'passenger');
         console.log('User role stored');
@@ -60,18 +58,16 @@ export default function LoginScreen({ navigation }) {
         
         // Verify token was stored
         const storedToken = await AsyncStorage.getItem('userToken');
-        console.log('Verification - Token retrieved from storage:', storedToken ? 'YES' : 'NO');
-        
-        console.log('=== TOKEN STORAGE COMPLETE ===');
-        
-        // Small delay to ensure storage is complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Verification - stored token:', storedToken ? 'YES' : 'NO');
         
         // Navigate to home or reload app
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Home' }],
-        });
+        console.log('Navigating to Home screen...');
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+        }, 500); // Small delay to ensure storage is complete
       } else {
         Alert.alert('Login Failed', 'Invalid response from server');
       }

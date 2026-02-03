@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authAPI, rideAPI } from '../services/api';
+import { authAPI, rideAPI, verifyToken } from '../services/api';
 
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
@@ -17,30 +17,29 @@ export default function HomeScreen({ navigation }) {
   const [activeRide, setActiveRide] = useState(null);
 
   useEffect(() => {
-    console.log('=== HOMESCREEN MOUNTED ===');
-    checkTokenAvailability();
     loadUserData();
     checkActiveRide();
   }, []);
 
-  const checkTokenAvailability = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      console.log('=== TOKEN AVAILABILITY CHECK ===');
-      console.log('Token in AsyncStorage:', token ? 'YES (length: ' + token.length + ')' : 'NO');
-      console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'N/A');
-    } catch (error) {
-      console.error('Error checking token availability:', error);
-    }
-  };
-
   const loadUserData = async () => {
     console.log('=== LOADING USER PROFILE ===');
+    
+    // Wait a bit to ensure token is stored
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verify token before making API call
+    const tokenCheck = await verifyToken();
+    if (!tokenCheck.valid) {
+      console.log('❌ No valid token found, cannot load profile');
+      Alert.alert('Authentication Error', 'No valid authentication token found. Please login again.');
+      setUserName('User');
+      return;
+    }
+    
     try {
       console.log('Calling authAPI.getProfile()...');
       const response = await authAPI.getProfile();
       console.log('Profile API response:', JSON.stringify(response.data, null, 2));
-      Alert.alert('Profile Response', `Status: ${response.status}\nData: ${JSON.stringify(response.data).substring(0, 100)}...`);
 
       // Backend returns: { success: true, user: { id, phoneNumber, userType, profile } }
       // Profile contains: { name, email, ... } for passengers
@@ -52,6 +51,8 @@ export default function HomeScreen({ navigation }) {
       console.error('=== PROFILE LOAD ERROR ===');
       console.error('Error details:', error);
       console.error('Error response:', error.response?.data);
+      Alert.alert('Profile Load Error', `Status: ${error.response?.status || 'Unknown'}\nMessage: ${error.response?.data?.message || error.message}`);
+      
       setUserName('User'); // Fallback
     }
   };
