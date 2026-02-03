@@ -20,14 +20,17 @@ export default function BookRideScreen({ navigation, route }) {
   const [pickupLocation, setPickupLocation] = useState(null);
   const [dropoffLocation, setDropoffLocation] = useState(null);
   const [vehicleType, setVehicleType] = useState('Normal');
-  const [estimatedFare, setEstimatedFare] = useState(0);
+  const [estimatedFare, setEstimatedFare] = useState(null);
+  const [fareDetails, setFareDetails] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fareLoading, setFareLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentRideId, setCurrentRideId] = useState(null);
+  const [showRedZoneWarning, setShowRedZoneWarning] = useState(false);
 
   // Handle location selected from map
   useEffect(() => {
@@ -50,8 +53,15 @@ export default function BookRideScreen({ navigation, route }) {
     loadPaymentMethods();
   }, []);
 
+  // Calculate fare when all required fields are filled
   useEffect(() => {
-    calculateFare();
+    if (pickupLocation && dropoffLocation && vehicleType) {
+      calculateFare();
+    } else {
+      // Reset fare if any required field is missing
+      setEstimatedFare(null);
+      setFareDetails(null);
+    }
   }, [vehicleType, pickupLocation, dropoffLocation]);
 
   const loadPaymentMethods = async () => {
@@ -59,7 +69,6 @@ export default function BookRideScreen({ navigation, route }) {
       console.log('Fetching payment methods...');
       const response = await passengerAPI.getPaymentMethods();
       console.log('Payment methods response:', response.data);
-      // Backend returns { success: true, paymentMethods: [...] }
       const methods = response.data.paymentMethods || [];
       console.log('Payment methods loaded:', methods.length);
       setPaymentMethods(methods);
@@ -74,13 +83,44 @@ export default function BookRideScreen({ navigation, route }) {
     }
   };
 
-  const calculateFare = () => {
-    // Simple estimation based on vehicle type
-    // In production, would use distance calculation
-    const vehicle = vehicleTypes.find((v) => v.type === vehicleType);
-    const estimatedKm = 5; // Default assumption
-    const fare = vehicle.baseFare + vehicle.perKm * estimatedKm;
-    setEstimatedFare(fare);
+  const calculateFare = async () => {
+    if (!pickupLocation || !dropoffLocation || !vehicleType) {
+      return;
+    }
+
+    setFareLoading(true);
+    try {
+      const response = await rideAPI.estimateFare({
+        pickupLatitude: pickupLocation.latitude,
+        pickupLongitude: pickupLocation.longitude,
+        dropoffLatitude: dropoffLocation.latitude,
+        dropoffLongitude: dropoffLocation.longitude,
+        vehicleType: vehicleType,
+      });
+
+      const data = response.data;
+      setEstimatedFare(data.estimatedFare);
+      setFareDetails({
+        baseFare: data.baseFare,
+        distanceFare: data.distanceFare,
+        redZoneSurcharge: data.redZoneSurcharge,
+        isRedZone: data.isRedZone,
+        redZoneLocations: data.redZoneLocations,
+        distance: data.estimatedDistance,
+      });
+
+      // Show red zone warning if applicable
+      if (data.isRedZone && data.redZoneLocations.length > 0) {
+        setShowRedZoneWarning(true);
+      }
+    } catch (error) {
+      console.error('Error calculating fare:', error);
+      setEstimatedFare(null);
+      setFareDetails(null);
+      Alert.alert('Error', 'Failed to calculate fare. Please try again.');
+    } finally {
+      setFareLoading(false);
+    }
   };
 
   const handleBookRide = async () => {
@@ -94,6 +134,39 @@ export default function BookRideScreen({ navigation, route }) {
       return;
     }
 
+    if (!estimatedFare) {
+      Alert.alert('Error', 'Please wait for fare calculation');
+      return;
+    }
+
+    // Show red zone confirmation if in bad road area
+    if (fareDetails?.isRedZone) {
+      Alert.alert(
+        '⚠️ Red Zone Alert',
+        getRedZoneMessage(),
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Confirm Booking', onPress: proceedWithBooking },
+        ]
+      );
+    } else {
+      proceedWithBooking();
+    }
+  };
+
+  const getRedZoneMessage = () => {
+    if (!fareDetails || !fareDetails.redZoneLocations) return '';
+    
+    const locations = fareDetails.redZoneLocations.map(loc => {
+      if (loc === 'pickup') return 'Pickup location';
+      if (loc === 'dropoff') return 'Drop-off location';
+      return loc;
+    });
+
+    return `${locations.join(' and ')} ${locations.length > 1 ? 'are' : 'is'} in an area with bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge (${fareDetails.redZoneSurcharge} XOF) has been applied to your fare.\n\nTotal: ${estimatedFare} XOF\n\nDo you want to proceed?`;
+  };
+
+  const proceedWithBooking = async () => {
     setLoading(true);
     setBookingError(null);
     setCurrentRideId(null);
@@ -108,18 +181,14 @@ export default function BookRideScreen({ navigation, route }) {
         vehicleType: vehicleType,
         paymentMethodId: selectedPayment.id,
       });
-      // Try to extract ride id from a few possible response shapes
+      
       const rideId = response.data?.id || response.data?.ride?.id || response.data?.rideId;
       if (rideId) {
-        // Store the ride ID so user can cancel the search
         setCurrentRideId(rideId);
-        // Navigate to ActiveRide which will show "Looking for driver..." when status is 'requested'
         navigation.navigate('ActiveRide', { rideId });
-        // Reset state after navigation
         setLoading(false);
         setCurrentRideId(null);
       } else {
-        // If backend did not return an id, surface a clear error so the user can retry
         console.warn('Ride created but no id returned:', response.data);
         setBookingError('Corrida solicitada, mas o ID não foi retornado. Tente ver sua viagem em Histórico.');
         setLoading(false);
@@ -135,14 +204,12 @@ export default function BookRideScreen({ navigation, route }) {
 
   const handleCancelSearch = async () => {
     if (!currentRideId) {
-      // If no ride ID yet, just stop the loading state
       setLoading(false);
       setBookingError(null);
       return;
     }
 
     try {
-      // Cancel the ride request via API
       await rideAPI.cancelRide(currentRideId);
       setLoading(false);
       setCurrentRideId(null);
@@ -249,77 +316,157 @@ export default function BookRideScreen({ navigation, route }) {
           ))}
         </View>
 
-        <View style={styles.fareSection}>
-          <Text style={styles.fareLabel}>{t('estimatedFare')}</Text>
-          <Text style={styles.fareAmount}>
-            {estimatedFare} {t('xof')}
-          </Text>
-        </View>
+        {/* Fare Display - Only show when all fields are filled */}
+        {pickupLocation && dropoffLocation && vehicleType && (
+          <View style={styles.fareSection}>
+            <Text style={styles.sectionTitle}>💰 Fare Estimate</Text>
+            {fareLoading ? (
+              <ActivityIndicator size="small" color="#FF6B00" />
+            ) : estimatedFare ? (
+              <View style={styles.fareContainer}>
+                {fareDetails?.isRedZone && (
+                  <View style={styles.redZoneBanner}>
+                    <Text style={styles.redZoneBannerText}>⚠️ RED ZONE - Bad Road Conditions</Text>
+                    <Text style={styles.redZoneBannerSubtext}>
+                      {fareDetails.redZoneLocations.map(loc => 
+                        loc === 'pickup' ? 'Pickup' : 'Drop-off'
+                      ).join(' & ')} in area with potholes/unpaved roads
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.fareRow}>
+                  <Text style={styles.fareLabel}>Base Fare:</Text>
+                  <Text style={styles.fareValue}>{fareDetails?.baseFare || 0} XOF</Text>
+                </View>
+                <View style={styles.fareRow}>
+                  <Text style={styles.fareLabel}>Distance ({fareDetails?.distance?.toFixed(1) || 0} km):</Text>
+                  <Text style={styles.fareValue}>{fareDetails?.distanceFare || 0} XOF</Text>
+                </View>
+                {fareDetails?.isRedZone && fareDetails.redZoneSurcharge > 0 && (
+                  <View style={styles.fareRow}>
+                    <Text style={[styles.fareLabel, styles.redZoneText]}>Red Zone Surcharge (30%):</Text>
+                    <Text style={[styles.fareValue, styles.redZoneText]}>+{fareDetails.redZoneSurcharge} XOF</Text>
+                  </View>
+                )}
+                <View style={styles.fareDivider} />
+                <View style={styles.fareRow}>
+                  <Text style={styles.fareLabelTotal}>Estimated Total:</Text>
+                  <Text style={styles.fareValueTotal}>{estimatedFare} XOF</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.fareError}>Unable to calculate fare</Text>
+            )}
+          </View>
+        )}
 
-        {paymentMethods.length > 0 && (
-          <View style={styles.paymentSection}>
-            <Text style={styles.sectionTitle}>💳 Payment Method</Text>
-            <View style={styles.paymentCard}>
-              <Text style={styles.paymentText}>
-                {selectedPayment?.type === 'card'
-                  ? `Card •••• ${selectedPayment.card_last_four}`
-                  : selectedPayment?.type === 'orange_money'
-                  ? `Orange Money ${selectedPayment.phone_number}`
-                  : `MTN Money ${selectedPayment.phone_number}`}
-              </Text>
+        {/* Payment Method Selection */}
+        <Text style={styles.sectionTitle}>💳 {t('paymentMethod')}</Text>
+        {paymentMethods.length === 0 ? (
+          <TouchableOpacity
+            style={styles.addPaymentButton}
+            onPress={() => navigation.navigate('AddPaymentMethod')}
+          >
+            <Text style={styles.addPaymentText}>➕ Add Payment Method</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.paymentContainer}>
+            {paymentMethods.map((method) => (
               <TouchableOpacity
-                onPress={() => navigation.navigate('PaymentMethods')}
+                key={method.id}
+                style={[
+                  styles.paymentOption,
+                  selectedPayment?.id === method.id && styles.paymentOptionActive,
+                ]}
+                onPress={() => setSelectedPayment(method)}
               >
-                <Text style={styles.changeText}>Change</Text>
+                <View style={styles.paymentInfo}>
+                  <Text style={styles.paymentType}>
+                    {method.provider === 'orange_money' && '🟠'}
+                    {method.provider === 'mtn_momo' && '🟡'}
+                    {method.provider === 'cash' && '💵'}
+                    {' '}
+                    {method.provider.replace('_', ' ').toUpperCase()}
+                  </Text>
+                  <Text style={styles.paymentDetails}>{method.account_number}</Text>
+                  {method.is_default && (
+                    <Text style={styles.defaultBadge}>Default</Text>
+                  )}
+                </View>
               </TouchableOpacity>
-            </View>
+            ))}
+            <TouchableOpacity
+              style={styles.addPaymentButton}
+              onPress={() => navigation.navigate('AddPaymentMethod')}
+            >
+              <Text style={styles.addPaymentText}>➕ Add Another</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {bookingError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>⚠️ {bookingError}</Text>
           </View>
         )}
 
         <TouchableOpacity
-          style={[styles.bookButton, loading && styles.bookButtonDisabled]}
+          style={[
+            styles.bookButton,
+            (!pickupLocation || !dropoffLocation || !selectedPayment || !estimatedFare) && styles.bookButtonDisabled,
+          ]}
           onPress={handleBookRide}
-          disabled={loading}
+          disabled={!pickupLocation || !dropoffLocation || !selectedPayment || !estimatedFare || loading}
         >
-          <Text style={styles.bookButtonText}>
-            {loading ? 'Procurando motorista...' : t('confirmBooking')}
-          </Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.bookButtonText}>
+              {estimatedFare ? `🚗 Book Ride - ${estimatedFare} XOF` : '🚗 Book Ride'}
+            </Text>
+          )}
         </TouchableOpacity>
-
-        {/* Inline booking error and retry */}
-        {bookingError && (
-          <View style={{ marginTop: 12 }}>
-            <Text style={{ color: '#FF0000', textAlign: 'center' }}>{bookingError}</Text>
-            <TouchableOpacity
-              style={[styles.retryButton, { alignSelf: 'center', marginTop: 10 }]}
-              onPress={() => {
-                setBookingError(null);
-              }}
-            >
-              <Text style={styles.retryButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     </ScrollView>
 
-    {/* Full-screen modal shown while booking to make state explicit */}
-    <Modal visible={loading} transparent animationType="fade">
+    {/* Red Zone Warning Modal */}
+    <Modal
+      visible={showRedZoneWarning}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowRedZoneWarning(false)}
+    >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <ActivityIndicator size="large" color="#FF6B00" />
-          <Text style={styles.modalText}>
-            Procurando motorista...{'\n'}Por favor aguarde
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>⚠️ Red Zone Alert</Text>
+          <Text style={styles.modalMessage}>
+            {getRedZoneMessage()}
           </Text>
           <TouchableOpacity
-            style={styles.cancelSearchButton}
-            onPress={handleCancelSearch}
+            style={styles.modalButton}
+            onPress={() => setShowRedZoneWarning(false)}
           >
-            <Text style={styles.cancelSearchButtonText}>Cancelar Busca</Text>
+            <Text style={styles.modalButtonText}>I Understand</Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
+
+    {/* Looking for Driver Modal */}
+    {loading && (
+      <Modal visible={loading} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator size="large" color="#FF6B00" />
+            <Text style={styles.modalTitle}>🔍 Looking for a driver...</Text>
+            <Text style={styles.modalMessage}>Please wait while we find a driver for you</Text>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelSearch}>
+              <Text style={styles.cancelButtonText}>Cancel Search</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    )}
     </>
   );
 }
@@ -327,10 +474,45 @@ export default function BookRideScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#FF6B00',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#fff',
     margin: 15,
     padding: 20,
     borderRadius: 15,
@@ -342,202 +524,271 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#333',
     marginTop: 15,
     marginBottom: 10,
-    color: '#000',
   },
   locationButton: {
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
     padding: 15,
-    backgroundColor: '#F0F8F0',
-    marginBottom: 10,
-    minHeight: 60,
-    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   locationButtonText: {
     fontSize: 15,
     color: '#333',
-    fontWeight: '500',
   },
   locationEditInput: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
+    marginTop: 10,
+    backgroundColor: '#fafafa',
     padding: 12,
-    fontSize: 14,
-    backgroundColor: '#FFF',
-    marginBottom: 15,
-    minHeight: 50,
-    textAlignVertical: 'top',
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  input: {
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 16,
-    backgroundColor: '#F9F9F9',
-    marginBottom: 10,
+    borderColor: '#e0e0e0',
+    fontSize: 14,
+    color: '#666',
   },
   vehicleGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+    justifyContent: 'space-around',
+    marginTop: 10,
   },
   vehicleOption: {
-    flex: 1,
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5',
     alignItems: 'center',
-    marginHorizontal: 5,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: '#f9f9f9',
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#e0e0e0',
+    flex: 1,
+    marginHorizontal: 5,
   },
   vehicleOptionActive: {
     borderColor: '#FF6B00',
-    backgroundColor: '#FFE8D6',
+    backgroundColor: '#fff5f0',
   },
   vehicleIcon: {
-    fontSize: 30,
+    fontSize: 32,
     marginBottom: 5,
   },
   vehicleText: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 3,
   },
   vehiclePrice: {
     fontSize: 12,
     color: '#666',
   },
   fareSection: {
-    backgroundColor: '#FF6B00',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginVertical: 20,
+    marginTop: 20,
   },
-  fareLabel: {
-    fontSize: 16,
-    color: '#000',
-    marginBottom: 5,
-  },
-  fareAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  paymentSection: {
-    marginBottom: 20,
-  },
-  paymentCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+  fareContainer: {
+    backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  paymentText: {
-    fontSize: 16,
-    color: '#333',
+  redZoneBanner: {
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f',
   },
-  changeText: {
-    color: '#FF6B00',
-    fontWeight: 'bold',
+  redZoneBannerText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#c62828',
+    marginBottom: 4,
   },
-  bookButton: {
-    backgroundColor: '#000',
-    padding: 18,
-    borderRadius: 10,
-    alignItems: 'center',
+  redZoneBannerSubtext: {
+    fontSize: 12,
+    color: '#c62828',
   },
-  bookButtonDisabled: {
-    opacity: 0.6,
+  fareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  bookButtonText: {
-    color: '#FF6B00',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
+  fareLabel: {
+    fontSize: 14,
     color: '#666',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    padding: 20,
+  fareValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
   },
-  errorText: {
+  redZoneText: {
+    color: '#d32f2f',
+    fontWeight: '600',
+  },
+  fareDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 10,
+  },
+  fareLabelTotal: {
     fontSize: 16,
-    color: '#FF0000',
+    fontWeight: '700',
+    color: '#333',
+  },
+  fareValueTotal: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FF6B00',
+  },
+  fareError: {
+    fontSize: 14,
+    color: '#d32f2f',
     textAlign: 'center',
-    marginBottom: 20,
+    padding: 10,
   },
-  retryButton: {
-    backgroundColor: '#FF6B00',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+  paymentContainer: {
+    marginTop: 10,
+  },
+  paymentOption: {
+    padding: 15,
     borderRadius: 10,
+    backgroundColor: '#f9f9f9',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    marginBottom: 10,
   },
-  retryButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+  paymentOptionActive: {
+    borderColor: '#FF6B00',
+    backgroundColor: '#fff5f0',
+  },
+  paymentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paymentType: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  paymentDetails: {
+    fontSize: 13,
+    color: '#666',
+    flex: 2,
+  },
+  defaultBadge: {
+    fontSize: 11,
+    color: '#FF6B00',
+    fontWeight: '600',
+    backgroundColor: '#fff5f0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  addPaymentButton: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FF6B00',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  addPaymentText: {
+    fontSize: 14,
+    color: '#FF6B00',
+    fontWeight: '600',
+  },
+  errorBanner: {
+    backgroundColor: '#ffebee',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f',
+  },
+  errorBannerText: {
+    fontSize: 14,
+    color: '#c62828',
+  },
+  bookButton: {
+    backgroundColor: '#FF6B00',
+    padding: 18,
+    borderRadius: 12,
+    marginTop: 20,
+    alignItems: 'center',
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  bookButtonDisabled: {
+    backgroundColor: '#ccc',
+    shadowOpacity: 0,
+  },
+  bookButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalCard: {
-    width: '80%',
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 12,
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 25,
+    width: '85%',
+    maxWidth: 400,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 10,
   },
-  modalText: {
-    marginTop: 12,
-    fontSize: 16,
-    textAlign: 'center',
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
     lineHeight: 22,
   },
-  cancelSearchButton: {
-    marginTop: 20,
-    backgroundColor: '#FF0000',
+  modalButton: {
+    backgroundColor: '#FF6B00',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
-    minWidth: 150,
+    width: '100%',
   },
-  cancelSearchButtonText: {
-    color: '#FFF',
+  modalButtonText: {
+    color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  cancelButton: {
+    marginTop: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#d32f2f',
+  },
+  cancelButtonText: {
+    color: '#d32f2f',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
