@@ -17,9 +17,11 @@ export default function ActiveRideScreen({ route, navigation }) {
   const { rideId } = route.params;
   const [ride, setRide] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
+    console.log('ActiveRideScreen mounted with rideId:', rideId);
     loadRideDetails();
     const interval = setInterval(loadRideDetails, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
@@ -34,10 +36,15 @@ export default function ActiveRideScreen({ route, navigation }) {
 
   const loadRideDetails = async () => {
     try {
+      console.log('Loading ride details for:', rideId);
       const response = await rideAPI.getRideDetails(rideId);
+      console.log('Ride details received:', response.data);
       setRide(response.data);
+      setError(null);
     } catch (error) {
       console.error('Error loading ride:', error);
+      console.error('Error response:', error.response?.data);
+      setError(error.response?.data?.message || error.message || 'Failed to load ride details');
     } finally {
       setLoading(false);
     }
@@ -144,10 +151,36 @@ export default function ActiveRideScreen({ route, navigation }) {
     );
   }
 
+  if (error) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>⚠️ {error}</Text>
+        <Text style={styles.loadingSubtext}>Unable to load ride details</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => {
+            setError(null);
+            setLoading(true);
+            loadRideDetails();
+          }}
+        >
+          <Text style={styles.backButtonText}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.backButton, { marginTop: 10, backgroundColor: '#666' }]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (!ride) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>⚠️ Ride not found</Text>
+        <Text style={styles.loadingSubtext}>This ride may have been cancelled or does not exist</Text>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}

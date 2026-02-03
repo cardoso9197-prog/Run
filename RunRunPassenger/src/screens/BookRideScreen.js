@@ -51,7 +51,16 @@ export default function BookRideScreen({ navigation, route }) {
   useEffect(() => {
     console.log('BookRideScreen mounted, loading payment methods...');
     loadPaymentMethods();
-  }, []);
+    
+    // Reset loading state when screen comes into focus
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('BookRideScreen focused');
+      setLoading(false);
+      setCurrentRideId(null);
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
   // Calculate fare when all required fields are filled
   useEffect(() => {
@@ -176,6 +185,13 @@ export default function BookRideScreen({ navigation, route }) {
     setLoading(true);
     setBookingError(null);
     setCurrentRideId(null);
+    
+    console.log('Starting ride booking...');
+    console.log('Pickup:', pickupLocation);
+    console.log('Dropoff:', dropoffLocation);
+    console.log('Vehicle:', vehicleType);
+    console.log('Payment:', selectedPayment);
+    
     try {
       const response = await rideAPI.createRide({
         pickupAddress: pickupLocation.name,
@@ -188,23 +204,36 @@ export default function BookRideScreen({ navigation, route }) {
         paymentMethodId: selectedPayment.id,
       });
       
+      console.log('Ride creation response:', response.data);
+      
       const rideId = response.data?.id || response.data?.ride?.id || response.data?.rideId;
+      console.log('Extracted ride ID:', rideId);
+      
       if (rideId) {
         setCurrentRideId(rideId);
+        console.log('Navigating to ActiveRide with ID:', rideId);
+        
+        // Navigate first, then reset state
         navigation.navigate('ActiveRide', { rideId });
-        setLoading(false);
-        setCurrentRideId(null);
+        
+        // Small delay to ensure navigation completes before resetting
+        setTimeout(() => {
+          setLoading(false);
+          setCurrentRideId(null);
+        }, 100);
       } else {
         console.warn('Ride created but no id returned:', response.data);
-        setBookingError('Corrida solicitada, mas o ID não foi retornado. Tente ver sua viagem em Histórico.');
+        setBookingError('Ride requested but ID not returned. Check your ride history.');
         setLoading(false);
       }
     } catch (error) {
       console.error('Error creating ride:', error);
-      const message = error.response?.data?.message || error.message || 'Falha ao reservar a corrida';
+      console.error('Error response:', error.response?.data);
+      const message = error.response?.data?.message || error.message || 'Failed to book ride';
       setBookingError(message);
       setLoading(false);
       setCurrentRideId(null);
+      Alert.alert('Booking Error', message);
     }
   };
 
