@@ -7,6 +7,25 @@
 
 ---
 
+## 🔧 LATEST FIXES (February 3, 2026)
+
+### Authentication System Fixed
+- ✅ **Token persistence issues resolved** - Fixed AsyncStorage timing problems
+- ✅ **API authentication working** - All API calls now properly authenticated
+- ✅ **User profile loading** - Shows actual user name instead of "Run Run user"
+- ✅ **Payment methods loading** - Successfully loads user's saved payment methods
+- ✅ **Debug alerts removed** - Clean production build without debug popups
+- ✅ **Enhanced error handling** - Better error messages for authentication failures
+
+### Technical Improvements
+- ✅ Added 1-second delays before API calls to ensure token storage completes
+- ✅ Token verification utility for debugging authentication issues
+- ✅ Fixed axios interceptor crashes when handling undefined data
+- ✅ Improved token validation (length > 10 check)
+- ✅ Enhanced console logging for debugging
+
+---
+
 ## 🎉 NEW FEATURES INCLUDED
 
 ### Red Zone Detection System
@@ -31,13 +50,36 @@
 
 ## 📱 DOWNLOAD LINKS
 
-### 🚗 Passenger App (RunRun Passenger)
+### 🚗 Passenger App (RunRun Passenger) - LATEST BUILD
 
-**Build ID:** `3a8491d8-e114-4dc9-94a4-1ff20e7020cc`
+**Build ID:** `58a87cb1-be1b-4d69-a4ab-100f6a454a89`  
+**Commit:** `0b587d647f6d829b0ad5463304be54ab17f533f8`  
+**Status:** ✅ FINISHED  
+**Build Time:** February 3, 2026 - 20:47:46 UTC
 
 **Download Link:**
 ```
-https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/3a8491d8-e114-4dc9-94a4-1ff20e7020cc
+https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/58a87cb1-be1b-4d69-a4ab-100f6a454a89
+```
+
+**Direct APK Download:**
+```
+https://expo.dev/artifacts/eas/bWYG4CQEWmpmvhPak9ErZc.apk
+```
+
+**QR Code:** Available on download page  
+**File Size:** ~30 MB (estimated)  
+**Minimum Android:** 6.0+
+
+---
+
+### 🚗 Passenger App (RunRun Passenger) - Previous Build
+
+**Build ID:** `107dd9ac-4fe1-48ac-af70-1e6be92efc71`
+
+**Download Link:**
+```
+https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/107dd9ac-4fe1-48ac-af70-1e6be92efc71
 ```
 
 **QR Code:** Available on download page  
@@ -86,6 +128,25 @@ https://expo.dev/accounts/edipro/projects/runrun-driver/builds/ba0372f9-1bf6-42e
 ---
 
 ## 🧪 TESTING CHECKLIST
+
+### 🔐 Test Authentication Fixes (NEW)
+
+**Test 1: Login & Profile Loading**
+- ✅ Login with phone number and OTP
+- ✅ Home screen shows actual user name (not "Run Run user")
+- ✅ No authentication error alerts
+- ✅ Profile API call succeeds (check console logs)
+
+**Test 2: Payment Methods Loading**
+- ✅ Navigate to Book Ride screen
+- ✅ Payment methods load automatically
+- ✅ No "failed to load payment methods" error
+- ✅ Can select payment method for booking
+
+**Test 3: API Authentication**
+- ✅ Fare estimation works (shows price breakdown)
+- ✅ No 401 Unauthorized errors in console
+- ✅ Token properly attached to all API requests
 
 ### Test Red Zone Detection
 
