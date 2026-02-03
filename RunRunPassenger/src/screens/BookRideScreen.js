@@ -98,20 +98,27 @@ export default function BookRideScreen({ navigation, route }) {
         vehicleType: vehicleType,
       });
 
-      const data = response.data;
-      setEstimatedFare(data.estimatedFare);
+      // Backend returns data in 'estimate' object
+      const estimate = response.data.estimate || response.data;
+      
+      console.log('Fare estimate received:', estimate);
+      
+      setEstimatedFare(estimate.totalFare);
       setFareDetails({
-        baseFare: data.baseFare,
-        distanceFare: data.distanceFare,
-        redZoneSurcharge: data.redZoneSurcharge,
-        isRedZone: data.isRedZone,
-        redZoneLocations: data.redZoneLocations,
-        distance: data.estimatedDistance,
+        baseFare: estimate.baseFare,
+        distanceFare: estimate.distanceFare,
+        redZoneSurcharge: estimate.redZoneSurcharge || 0,
+        isRedZone: estimate.isRedZone || false,
+        redZoneInfo: estimate.redZoneInfo,
+        distance: estimate.distance,
       });
 
       // Show red zone warning if applicable
-      if (data.isRedZone && data.redZoneLocations.length > 0) {
+      if (estimate.isRedZone) {
+        console.log('Red zone detected:', estimate.redZoneInfo);
         setShowRedZoneWarning(true);
+      } else {
+        setShowRedZoneWarning(false);
       }
     } catch (error) {
       console.error('Error calculating fare:', error);
@@ -155,15 +162,14 @@ export default function BookRideScreen({ navigation, route }) {
   };
 
   const getRedZoneMessage = () => {
-    if (!fareDetails || !fareDetails.redZoneLocations) return '';
+    if (!fareDetails || !fareDetails.redZoneInfo) {
+      return 'This area has bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge has been applied to your fare.\n\nDo you want to proceed?';
+    }
     
-    const locations = fareDetails.redZoneLocations.map(loc => {
-      if (loc === 'pickup') return 'Pickup location';
-      if (loc === 'dropoff') return 'Drop-off location';
-      return loc;
-    });
-
-    return `${locations.join(' and ')} ${locations.length > 1 ? 'are' : 'is'} in an area with bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge (${fareDetails.redZoneSurcharge} XOF) has been applied to your fare.\n\nTotal: ${estimatedFare} XOF\n\nDo you want to proceed?`;
+    const zoneName = fareDetails.redZoneInfo.redZoneName || 'This area';
+    const roadCondition = fareDetails.redZoneInfo.roadCondition || 'poor road conditions';
+    
+    return `${zoneName} has ${roadCondition} roads.\n\nAn additional 30% surcharge (${fareDetails.redZoneSurcharge} XOF) has been applied to compensate the driver.\n\nTotal fare: ${estimatedFare} XOF\n\nDo you want to proceed with this booking?`;
   };
 
   const proceedWithBooking = async () => {
@@ -328,9 +334,7 @@ export default function BookRideScreen({ navigation, route }) {
                   <View style={styles.redZoneBanner}>
                     <Text style={styles.redZoneBannerText}>⚠️ RED ZONE - Bad Road Conditions</Text>
                     <Text style={styles.redZoneBannerSubtext}>
-                      {fareDetails.redZoneLocations.map(loc => 
-                        loc === 'pickup' ? 'Pickup' : 'Drop-off'
-                      ).join(' & ')} in area with potholes/unpaved roads
+                      {fareDetails.redZoneInfo?.redZoneName || 'This area'} has {fareDetails.redZoneInfo?.roadCondition || 'poor'} roads
                     </Text>
                   </View>
                 )}
