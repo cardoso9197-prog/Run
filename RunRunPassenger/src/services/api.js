@@ -18,18 +18,18 @@ api.interceptors.request.use(
     console.log('=== AXIOS REQUEST INTERCEPTOR ===');
     console.log('Full URL:', config.baseURL + config.url);
     console.log('Method:', config.method?.toUpperCase());
-    console.log('Request data:', JSON.stringify(config.data).substring(0, 200));
+    console.log('Request data:', config.data ? JSON.stringify(config.data).substring(0, 200) : 'No data');
 
     try {
       console.log('Retrieving token from AsyncStorage...');
       const token = await AsyncStorage.getItem('userToken');
       console.log('Token retrieved:', token ? 'YES (length: ' + token.length + ')' : 'NO');
 
-      if (token) {
+      if (token && token.length > 10) { // Basic validation
         config.headers.Authorization = `Bearer ${token}`;
         console.log('✅ Authorization header added');
       } else {
-        console.log('⚠️ No token found - request will be unauthenticated');
+        console.log('⚠️ No valid token found - request will be unauthenticated');
       }
     } catch (error) {
       console.error('❌ Error retrieving token:', error);
@@ -50,7 +50,7 @@ api.interceptors.response.use(
     console.log('=== AXIOS RESPONSE SUCCESS ===');
     console.log('Status:', response.status);
     console.log('URL:', response.config?.url);
-    console.log('Response data:', response.data ? JSON.stringify(response.data).substring(0, 200) : 'NO DATA');
+    console.log('Response data:', response.data ? JSON.stringify(response.data).substring(0, 200) : 'No data');
     console.log('=== RESPONSE SUCCESS COMPLETE ===');
     return response;
   },
@@ -59,7 +59,7 @@ api.interceptors.response.use(
     console.error('Status:', error?.response?.status);
     console.error('URL:', error?.config?.url);
     console.error('Error message:', error?.message);
-    console.error('Response data:', error?.response?.data ? JSON.stringify(error.response.data) : 'NO RESPONSE DATA');
+    console.error('Response data:', error?.response?.data ? JSON.stringify(error.response.data) : 'No response data');
     console.error('Is network error:', !error?.response && error?.request);
     
     if (error.response?.status === 401) {
@@ -70,7 +70,31 @@ api.interceptors.response.use(
     console.error('=== RESPONSE ERROR COMPLETE ===');
     return Promise.reject(error);
   }
-);// Auth APIs
+);
+
+// Token verification utility
+export const verifyToken = async () => {
+  try {
+    console.log('=== TOKEN VERIFICATION ===');
+    const token = await AsyncStorage.getItem('userToken');
+    console.log('Token exists:', !!token);
+    console.log('Token length:', token?.length || 0);
+    console.log('Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
+    
+    if (!token || token.length < 10) {
+      console.log('❌ Token invalid or missing');
+      return { valid: false, token: null };
+    }
+    
+    console.log('✅ Token appears valid');
+    return { valid: true, token };
+  } catch (error) {
+    console.error('❌ Error verifying token:', error);
+    return { valid: false, token: null };
+  }
+};
+
+// Auth APIs
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),

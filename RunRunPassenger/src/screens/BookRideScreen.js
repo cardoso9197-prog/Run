@@ -11,17 +11,12 @@ import {
   Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { rideAPI, passengerAPI } from '../services/api';
+import { rideAPI, passengerAPI, verifyToken } from '../services/api';
 
 export default function BookRideScreen({ navigation, route }) {
   console.log('=== BOOKRIDESCREEN COMPONENT RENDERED ===');
   console.log('Navigation state:', navigation);
   console.log('Route params:', route.params);
-  
-  // Show alert when screen loads
-  React.useEffect(() => {
-    Alert.alert('BookRide Screen', 'BookRide screen loaded successfully!');
-  }, []);
   
   const { t } = useTranslation();
   const [pickupLocation, setPickupLocation] = useState(null);
@@ -82,6 +77,22 @@ export default function BookRideScreen({ navigation, route }) {
 
   const loadPaymentMethods = async () => {
     console.log('=== LOAD PAYMENT METHODS STARTED ===');
+    
+    // Wait a bit to ensure token is stored
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verify token before making API call
+    const tokenCheck = await verifyToken();
+    if (!tokenCheck.valid) {
+      console.log('❌ No valid token found, cannot load payment methods');
+      Alert.alert('Authentication Error', 'No valid authentication token found. Please login again.');
+      setError('Authentication failed. Please login again.');
+      setPaymentMethods([]);
+      setSelectedPayment(null);
+      setInitialLoading(false);
+      return;
+    }
+    
     try {
       console.log('Fetching payment methods...');
       console.log('API URL should be:', 'https://zippy-healing-production-24e4.up.railway.app/api/payment-methods');
@@ -91,8 +102,6 @@ export default function BookRideScreen({ navigation, route }) {
       console.log('=== PAYMENT METHODS RESPONSE RECEIVED ===');
       console.log('Response status:', response.status);
       console.log('Response data:', JSON.stringify(response.data, null, 2));
-      
-      Alert.alert('Payment Methods Response', `Status: ${response.status}\nData: ${JSON.stringify(response.data).substring(0, 100)}...`);
       
       // Backend returns: { success: true, paymentMethods: [...] }
       const methods = response.data.paymentMethods || response.data || [];
