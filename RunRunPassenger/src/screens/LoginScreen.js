@@ -42,14 +42,30 @@ export default function LoginScreen({ navigation }) {
       console.log('Login response:', response?.data);
 
       if (response && response.data && response.data.token) {
+        console.log('=== STORING TOKEN ===');
+        console.log('Token to store:', response.data.token.substring(0, 20) + '...');
+        
         // Store token and user info
         await AsyncStorage.setItem('userToken', response.data.token);
+        console.log('Token stored in AsyncStorage');
+        
         await AsyncStorage.setItem('userRole', 'passenger');
+        console.log('User role stored');
         
         // Store user data if available
         if (response.data.user) {
           await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+          console.log('User data stored');
         }
+        
+        // Verify token was stored
+        const storedToken = await AsyncStorage.getItem('userToken');
+        console.log('Verification - Token retrieved from storage:', storedToken ? 'YES' : 'NO');
+        
+        console.log('=== TOKEN STORAGE COMPLETE ===');
+        
+        // Small delay to ensure storage is complete
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Navigate to home or reload app
         navigation.reset({
