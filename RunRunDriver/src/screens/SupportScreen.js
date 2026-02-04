@@ -6,8 +6,7 @@ export default function SupportScreen() {
   const { t } = useTranslation();
 
   const numbers = [
-    { label: '+245 966 084 539', value: 'tel:+245966084539' },
-    { label: '+245 957 338 295', value: 'tel:+245957338295' },
+    { label: '+245 955 971 275', value: 'tel:+245955971275' },
   ];
 
   return (
