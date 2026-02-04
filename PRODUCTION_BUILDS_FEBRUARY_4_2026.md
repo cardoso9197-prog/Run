@@ -204,15 +204,45 @@ All these debug statements have been removed:
 
 ## 📥 DOWNLOAD LINKS
 
-### 🏪 Production Build (Play Store)
-**Status:** 🔄 Building...  
-**Link:** Will be available after build completes  
-**ETA:** ~7-10 minutes
+### 🏪 Production Build (Play Store) - ✅ **COMPLETE!**
+**Status:** ✅ FINISHED  
+**Build ID:** `52583220-3a7a-435d-8713-5cd117beee1e`  
+**Commit:** `4f3c4de8410253bb609e67f31ebc8d25bb0a6ebc`  
+**Format:** AAB (Android App Bundle)  
+**Started:** 04/02/2026, 11:42:18  
+**Finished:** 04/02/2026, 11:48:51  
+**Build Time:** ~6.5 minutes
 
-### 📲 Preview Build (Direct Install)
-**Status:** 🔄 Building...  
-**Link:** Will be available after build completes  
-**ETA:** ~7-10 minutes
+**📥 Download AAB:**
+```
+https://expo.dev/artifacts/eas/baKZWeQG5vf22banLDk2Sw.aab
+```
+
+**Build Logs:**
+```
+https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/52583220-3a7a-435d-8713-5cd117beee1e
+```
+
+### 📲 Preview Build (Direct Install) - ✅ **COMPLETE!**
+**Status:** ✅ FINISHED  
+**Build ID:** `4301dfe0-4090-4242-8773-2dc7969348ce`  
+**Commit:** `4f3c4de8410253bb609e67f31ebc8d25bb0a6ebc`  
+**Format:** APK (Android Package)  
+**Started:** 04/02/2026, 11:43:21  
+**Finished:** 04/02/2026, 11:57:20  
+**Build Time:** ~14 minutes
+
+**📥 Download APK:**
+```
+https://expo.dev/artifacts/eas/9gUUWJFvZH9PicLb6RbpRY.apk
+```
+
+**Build Logs:**
+```
+https://expo.dev/accounts/edipro/projects/runrun-passenger/builds/4301dfe0-4090-4242-8773-2dc7969348ce
+```
+
+**🎉 BOTH BUILDS COMPLETE AND READY!**
 
 ---
 
