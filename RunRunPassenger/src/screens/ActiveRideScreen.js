@@ -44,7 +44,19 @@ export default function ActiveRideScreen({ route, navigation }) {
     } catch (error) {
       console.error('Error loading ride:', error);
       console.error('Error response:', error.response?.data);
-      setError(error.response?.data?.message || error.message || 'Failed to load ride details');
+      
+      // Better error messages
+      let errorMessage = 'Failed to load ride details';
+      
+      if (error.response?.status === 404) {
+        errorMessage = 'No driver available yet. Please wait...';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
