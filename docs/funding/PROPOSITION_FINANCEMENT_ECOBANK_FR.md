@@ -3,7 +3,7 @@
 **Date:** 4 Février 2026  
 **Projet:** Run-Run - Plateforme Digitale de Transport en Guinée-Bissau  
 **Demandeur:** Run-Run Tech Solutions  
-**Montant Demandé:** 750.000 EUR  
+**Montant Demandé:** 50.000.000 XOF (76.336 EUR)  
 **Ligne de Crédit:** Financement Entreprise - Technologie et Innovation
 
 ---
@@ -21,12 +21,12 @@
 - ✅ **Marché inexploité** - First mover sur un marché de 450.000+ utilisateurs
 
 ### Opportunité d'Investissement
-**Montant:** 750.000 EUR  
-**Utilisation:** Lancement commercial, marketing, expansion d'équipe, fonds de roulement  
-**Retour attendu à la banque:** 1.125.000 EUR en 5 ans (taux 10% p.a.)  
+**Montant:** 50.000.000 XOF (76.336 EUR)  
+**Utilisation:** Lancement commercial initial, marketing, fonds de roulement  
+**Retour attendu à la banque:** 70.000.000 XOF en 3 ans (taux 10% p.a.)  
 **Collatéral:** Propriété intellectuelle, équipements, créances corporatives  
-**Break-even:** Année 3  
-**ROI pour investisseurs:** 300% en 5 ans  
+**Break-even:** Année 2  
+**ROI pour investisseurs:** 200% en 3 ans  
 
 ---
 
@@ -142,8 +142,8 @@ Démocratiser l'accès à un transport sûr, fiable et abordable en Guinée-Biss
 
 **Marché Cible Initial (SOM - An 1)**
 - **Région de Bissau:** 450.000 habitants
-- **Target utilisateurs:** 5% = 22.500 personnes
-- **Target chauffeurs:** 500 (1% des taxis/motos)
+- **Target utilisateurs:** 3% = 13.500 personnes
+- **Target chauffeurs:** 10 (phase initiale pilote)
 
 #### Taille du Marché en Valeur
 
@@ -514,14 +514,14 @@ Chauffeur Reçoit = 80% du Tarif Base
 - [ ] Enregistrer marque et obtenir licences
 
 **Semaines 3-4: Préparation de Marché**
-- [ ] Recruter premiers 25 chauffeurs (screening rigoureux)
+- [ ] Recruter premiers 10 chauffeurs (screening rigoureux)
 - [ ] Formation chauffeurs (utilisation app, service)
 - [ ] Vérification documents (permis, assurance, véhicule)
 - [ ] Campagnes teaser en radios/réseaux sociaux
 - [ ] Partenariats avec Orange Money, MTN
 
 **Semaines 5-6: Tests Finaux**
-- [ ] Beta testing avec 25 chauffeurs + 100 utilisateurs invités
+- [ ] Beta testing avec 10 chauffeurs + 50 utilisateurs invités
 - [ ] Ajustements finaux de l'app basés sur feedback
 - [ ] Préparation événement de lancement
 - [ ] Former équipe de support
@@ -529,7 +529,7 @@ Chauffeur Reçoit = 80% du Tarif Base
 
 #### Phase 1: Lancement Doux (Mois 1 - 12 semaines)
 
-**Objectif:** 50 chauffeurs, 2.000 utilisateurs, 100 courses/jour
+**Objectif:** 10 chauffeurs, 500 utilisateurs, 20 courses/jour
 
 **Semaine 1-2: Soft Launch**
 - [ ] Lancement pour groupe fermé (500 early adopters)
@@ -797,16 +797,18 @@ Chauffeur Reçoit = 80% du Tarif Base
 
 ### 5.1 Structure de Leadership
 
-#### Fondateur & CEO - Eduardo Cardoso
+#### Fondateur & CEO - Edivaldo Cardoso
 **Responsabilités:**
 - Vision stratégique et direction de l'entreprise
 - Relation avec investisseurs et banques
 - Partenariats stratégiques (gov, entreprises, organisations)
 - Représentation publique de la marque
 - Décisions finales sur questions critiques
+- Développement technique et programmation leader
 
 **Expérience Pertinente:**
 - 8+ ans en technologie et startups
+- Programmeur leader et architecte logiciel
 - Expérience en développement de produits digitaux
 - Connaissance profonde du marché guinéen
 - Réseau fort à Bissau et région
@@ -863,18 +865,15 @@ Chauffeur Reçoit = 80% du Tarif Base
 
 ### 5.2 Structure Organisationnelle Évolutive
 
-#### Phase 1: Équipe Minimale (Mois 0-3) - 5 personnes
+#### Phase 1: Équipe Minimale (Mois 0-3) - 3 personnes
 
 ```
-CEO (Eduardo Cardoso)
+CEO (Edivaldo Cardoso)
     ├── CTO (À recruter)
-    │   └── Développeur Backend
-    │   └── Développeur Mobile
-    └── COO (À recruter)
-        └── Coordinateur Opérationnel
+    └── COO (À recruter - mi-temps)
 ```
 
-**Budget salaires:** 25.000 EUR/mois
+**Budget salaires:** 10.000 EUR/mois
 
 #### Phase 2: Équipe de Croissance (Mois 4-9) - 12 personnes
 
@@ -1218,17 +1217,17 @@ CEO
 
 #### Structure du Prêt
 
-**Montant:** 750.000 EUR
+**Montant:** 50.000.000 XOF (76.336 EUR)
 
 **Type:** Prêt Bancaire Entreprise - Ligne Innovation Tech
 
-**Durée Totale:** 6 ans (72 mois)
+**Durée Totale:** 3 ans (36 mois)
 
-**Période de Grâce:** 18 mois (intérêts seulement)
-- Justification: Temps pour lancer, grandir, atteindre flux de trésorerie positif
+**Période de Grâce:** 6 mois (intérêts seulement)
+- Justification: Temps pour lancer et atteindre flux de trésorerie initial
 - Pendant grâce: Paiement seulement d'intérêts mensuels
 
-**Période d'Amortissement:** 54 mois (après grâce)
+**Période d'Amortissement:** 30 mois (après grâce)
 - Paiement mensuel fixe de principal + intérêts
 - Système Price (versements égaux)
 
@@ -1601,11 +1600,11 @@ CEO
 
 Nous demandons à **Ecobank Guinée-Bissau**:
 
-📋 **Montant:** 750.000 EUR  
-⏱️ **Durée:** 6 ans (18 mois grâce + 54 mois amortissement)  
+📋 **Montant:** 50.000.000 XOF (76.336 EUR)  
+⏱️ **Durée:** 3 ans (6 mois grâce + 30 mois amortissement)  
 💰 **Taux:** 10% p.a. (négociable)  
 🔒 **Garanties:** Propriété intellectuelle, équipements, créances, aval  
-🎯 **Déboursement:** 3 tranches liées à milestones (300K + 300K + 150K)  
+🎯 **Déboursement:** Unique (50M XOF immédiat)  
 
 ### 9.4 Engagement de Run-Run
 
@@ -1654,8 +1653,8 @@ Bissau, Guinée-Bissau
 📱 Téléphone: +245 [numéro]  
 🌐 Website: www.runrun.gw  
 
-**CEO & Fondateur - Eduardo Cardoso**  
-📧 eduardo.cardoso@runrun.gw  
+**CEO & Fondateur - Edivaldo Cardoso**  
+📧 edivaldo.cardoso@runrun.gw  
 📱 +245 [numéro WhatsApp]  
 💼 LinkedIn: [lien]  
 
