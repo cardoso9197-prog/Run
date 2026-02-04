@@ -3,7 +3,7 @@
 **Data:** 4 de Fevereiro de 2026  
 **Projeto:** Run-Run - Plataforma Digital de Transporte na Guiné-Bissau  
 **Solicitante:** Run-Run Tech Solutions  
-**Montante Solicitado:** 750.000 EUR  
+**Montante Solicitado:** 50.000.000 XOF (76.336 EUR)  
 **Linha de Crédito:** Financiamento Empresarial - Tecnologia e Inovação
 
 ---
@@ -21,12 +21,12 @@ A **Run-Run** é uma startup de tecnologia guineense que desenvolveu a primeira 
 - ✅ **Mercado inexplorado** - Primeiro mover em mercado de 450.000+ usuários
 
 ### Oportunidade de Investimento
-**Montante:** 750.000 EUR  
-**Uso:** Lançamento comercial, marketing, expansão de equipa, capital de giro  
-**Retorno esperado ao banco:** 1.125.000 EUR em 5 anos (taxa 10% a.a.)  
+**Montante:** 50.000.000 XOF (76.336 EUR)  
+**Uso:** Lançamento comercial inicial, marketing, capital de giro  
+**Retorno esperado ao banco:** 70.000.000 XOF em 3 anos (taxa 10% a.a.)  
 **Colateral:** Propriedade intelectual, equipamentos, recebíveis corporativos  
-**Break-even:** Ano 3  
-**ROI para investidores:** 300% em 5 anos  
+**Break-even:** Ano 2  
+**ROI para investidores:** 200% em 3 anos  
 
 ---
 
@@ -142,8 +142,8 @@ Ser a plataforma líder de mobilidade urbana na África Ocidental, reconhecida p
 
 **Mercado Alvo Inicial (SOM - Ano 1)**
 - **Região de Bissau:** 450.000 habitantes
-- **Target usuários:** 5% = 22.500 pessoas
-- **Target motoristas:** 500 (1% dos táxis/motos)
+- **Target usuários:** 3% = 13.500 pessoas
+- **Target motoristas:** 10 (fase inicial piloto)
 
 #### Tamanho do Mercado em Valor
 
@@ -459,44 +459,43 @@ Motorista Recebe = 80% da Tarifa Base
 | **Taxas pagamento** | 2% | Por transação | Orange Money, MTN |
 | **SMS/Notificações** | 10 XOF | Por SMS | Confirmações, alertas |
 
-#### Investimento Inicial Detalhado (750.000 EUR)
+#### Investimento Inicial Detalhado (50.000.000 XOF / 76.336 EUR)
 
-| Categoria | Valor (EUR) | % | Justificativa Detalhada |
-|-----------|-------------|---|-------------------------|
-| **1. Marketing e Lançamento** | 150.000 | 20% | |
-| - Campanha pré-lançamento | 30.000 | 4% | Teaser 2 meses antes, influencers |
-| - Evento lançamento | 20.000 | 2.7% | Grande evento em 3 locais |
-| - Marketing digital (6 meses) | 40.000 | 5.3% | Facebook, Google, Instagram ads |
-| - Rádios e TV local | 25.000 | 3.3% | Spots em horário nobre |
-| - Outdoors e mídia externa | 20.000 | 2.7% | 15 localizações estratégicas |
-| - Materiais impressos | 10.000 | 1.3% | Flyers, posters, uniformes |
-| - Assessoria de imprensa | 5.000 | 0.7% | Relações públicas, press releases |
-| **2. Tecnologia** | 80.000 | 10.7% | |
-| - Infraestrutura cloud (1 ano) | 30.000 | 4% | AWS/Railway, escalável |
-| - APIs e integrações | 25.000 | 3.3% | Google Maps, pagamentos |
-| - Licenças de software | 15.000 | 2% | Desenvolvimento, segurança |
-| - Hardware (servidores backup) | 10.000 | 1.3% | Redundância e segurança |
-| **3. Recursos Humanos** | 200.000 | 26.7% | |
-| - Salários equipa núcleo (12 meses) | 150.000 | 20% | CEO, CTO, 2 devs, 1 ops |
-| - Recrutamento e onboarding | 20.000 | 2.7% | Headhunters, treinamento |
-| - Benefícios e seguros | 30.000 | 4% | Saúde, seguro de vida |
-| **4. Legal e Regulamentação** | 50.000 | 6.7% | |
-| - Licenças operacionais | 20.000 | 2.7% | Governo, ARCEA, municipal |
-| - Seguros | 15.000 | 2% | Responsabilidade civil, cibernético |
-| - Serviços legais | 15.000 | 2% | Contratos, compliance |
-| **5. Incentivos de Mercado** | 150.000 | 20% | |
-| - Bônus motoristas (500 × 50K) | 100.000 | 13.3% | 25M XOF em incentivos |
-| - Viagens grátis passageiros | 30.000 | 4% | 10.000 primeiras viagens |
-| - Programa de referência | 20.000 | 2.7% | Crescimento viral |
-| **6. Operações e Escritório** | 60.000 | 8% | |
-| - Aluguel escritório (12 meses) | 24.000 | 3.2% | 2.000 EUR/mês, localização premium |
-| - Equipamento (PCs, mobília) | 20.000 | 2.7% | 10 estações de trabalho completas |
-| - Utilidades e internet | 10.000 | 1.3% | Luz, água, fibra ótica |
-| - Material de escritório | 6.000 | 0.8% | Papelaria, café, limpeza |
-| **7. Capital de Giro e Reservas** | 60.000 | 8% | |
-| - Reserva operacional | 40.000 | 5.3% | 3 meses de custos fixos |
-| - Contingências | 20.000 | 2.7% | Imprevistos, emergências |
-| **TOTAL** | **750.000** | **100%** | |
+| Categoria | Valor (XOF) | Valor (EUR) | % | Justificativa Detalhada |
+|-----------|-------------|-------------|---|-------------------------|
+| **1. Marketing e Lançamento** | 10.000.000 | 15.267 | 20% | |
+| - Campanha pré-lançamento | 2.000.000 | 3.053 | 4% | Teaser 1 mês antes, influencers |
+| - Evento lançamento | 1.500.000 | 2.290 | 3% | Evento em 2 locais |
+| - Marketing digital (3 meses) | 3.000.000 | 4.580 | 6% | Facebook, Google, Instagram ads |
+| - Rádios e TV local | 2.000.000 | 3.053 | 4% | Spots em horário nobre |
+| - Materiais impressos | 1.000.000 | 1.527 | 2% | Flyers, posters |
+| - Assessoria de imprensa | 500.000 | 763 | 1% | Relações públicas |
+| **2. Tecnologia** | 8.000.000 | 12.214 | 16% | |
+| - Infraestrutura cloud (6 meses) | 4.000.000 | 6.107 | 8% | AWS/Railway |
+| - APIs e integrações | 2.500.000 | 3.817 | 5% | Google Maps, pagamentos |
+| - Licenças de software | 1.500.000 | 2.290 | 3% | Desenvolvimento, segurança |
+| **3. Recursos Humanos** | 15.000.000 | 22.901 | 30% | |
+| - Salários equipa núcleo (6 meses) | 12.000.000 | 18.321 | 24% | CEO, CTO, COO |
+| - Recrutamento | 1.500.000 | 2.290 | 3% | Treinamento |
+| - Benefícios | 1.500.000 | 2.290 | 3% | Seguros básicos |
+| **4. Legal e Regulamentação** | 5.000.000 | 7.634 | 10% | |
+| - Licenças operacionais | 2.500.000 | 3.817 | 5% | Governo, ARCEA |
+| - Seguros | 1.500.000 | 2.290 | 3% | Responsabilidade civil |
+| - Serviços legais | 1.000.000 | 1.527 | 2% | Contratos |
+| **5. Incentivos de Mercado** | 7.000.000 | 10.687 | 14% | |
+| - Bônus motoristas (10 × 200K) | 2.000.000 | 3.053 | 4% | Incentivos iniciais |
+| - Viagens grátis passageiros | 3.000.000 | 4.580 | 6% | 200 primeiras viagens |
+| - Programa de referência | 2.000.000 | 3.053 | 4% | Crescimento viral |
+| **6. Operações e Escritório** | 3.000.000 | 4.580 | 6% | |
+| - Aluguel escritório (6 meses) | 1.500.000 | 2.290 | 3% | Localização básica |
+| - Equipamento básico | 1.000.000 | 1.527 | 2% | 3 computadores |
+| - Utilidades | 500.000 | 763 | 1% | Internet, luz |
+| **7. Capital de Giro e Reservas** | 2.000.000 | 3.053 | 4% | |
+| - Reserva operacional | 1.500.000 | 2.290 | 3% | Contingências |
+| - Emergências | 500.000 | 763 | 1% | Imprevistos |
+| **TOTAL** | **50.000.000** | **76.336** | **100%** | |
+
+*Conversão: 1 EUR ≈ 655 XOF*
 
 ---
 
@@ -514,14 +513,14 @@ Motorista Recebe = 80% da Tarifa Base
 - [ ] Registrar marca e obter licenças
 
 **Semanas 3-4: Preparação de Mercado**
-- [ ] Recrutar primeiros 25 motoristas (screening rigoroso)
+- [ ] Recrutar primeiros 10 motoristas (screening rigoroso)
 - [ ] Treinamento motoristas (uso app, atendimento)
 - [ ] Verificação documentos (CNH, seguro, veículo)
 - [ ] Campanhas teaser em rádios/redes sociais
 - [ ] Parcerias com Orange Money, MTN
 
 **Semanas 5-6: Testes Finais**
-- [ ] Beta testing com 25 motoristas + 100 usuários convidados
+- [ ] Beta testing com 10 motoristas + 50 usuários convidados
 - [ ] Ajustes finais no app baseado em feedback
 - [ ] Preparação evento de lançamento
 - [ ] Treinar equipa de suporte
@@ -529,10 +528,10 @@ Motorista Recebe = 80% da Tarifa Base
 
 #### Fase 1: Lançamento Suave (Mês 1 - 12 semanas)
 
-**Objetivo:** 50 motoristas, 2.000 usuários, 100 viagens/dia
+**Objetivo:** 10 motoristas, 500 usuários, 20 viagens/dia
 
 **Semana 1-2: Soft Launch**
-- [ ] Lançamento para grupo fechado (500 early adopters)
+- [ ] Lançamento para grupo fechado (100 early adopters)
 - [ ] Monitoramento intensivo de bugs
 - [ ] Ajustes rápidos conforme necessário
 - [ ] Feedback diário com motoristas
@@ -543,19 +542,19 @@ Motorista Recebe = 80% da Tarifa Base
 - [ ] Cobertura de imprensa (jornais, TV, rádio)
 - [ ] Demonstrações ao vivo do app
 - [ ] Inscrição de novos motoristas no local
-- [ ] Incentivo: 1.000 primeiras viagens grátis
+- [ ] Incentivo: 200 primeiras viagens grátis
 
 **Semana 5-8: Crescimento Inicial**
 - [ ] Campanhas de rádio diárias
 - [ ] Parcerias com universidades (descontos estudantes)
-- [ ] Outdoors em 10 localizações estratégicas
-- [ ] Influenciadores digitais (5 principais)
+- [ ] Outdoors em 5 localizações estratégicas
+- [ ] Influenciadores digitais (3 principais)
 - [ ] Onboarding contínuo de motoristas
 
 **Semana 9-12: Estabilização**
-- [ ] Atingir 50 motoristas ativos
-- [ ] 2.000 usuários registrados
-- [ ] 100 viagens/dia consistentemente
+- [ ] Atingir 10 motoristas ativos
+- [ ] 500 usuários registrados
+- [ ] 20 viagens/dia consistentemente
 - [ ] NPS (Net Promoter Score) > 50
 - [ ] Taxa retenção motoristas > 80%
 
@@ -797,16 +796,18 @@ Motorista Recebe = 80% da Tarifa Base
 
 ### 5.1 Estrutura de Liderança
 
-#### Fundador & CEO - Eduardo Cardoso
+#### Fundador & CEO - Edivaldo Cardoso
 **Responsabilidades:**
 - Visão estratégica e direção da empresa
 - Relacionamento com investidores e bancos
 - Parcerias estratégicas (gov, empresas, organizações)
 - Representação pública da marca
 - Decisões finais em questões críticas
+- Desenvolvimento técnico e programação líder
 
 **Experiência Relevante:**
 - 8+ anos em tecnologia e startups
+- Programador líder e arquiteto de software
 - Experiência em desenvolvimento de produtos digitais
 - Conhecimento profundo do mercado guineense
 - Network forte em Bissau e região
@@ -863,18 +864,15 @@ Motorista Recebe = 80% da Tarifa Base
 
 ### 5.2 Estrutura Organizacional Evolutiva
 
-#### Fase 1: Equipa Mínima (Meses 0-3) - 5 pessoas
+#### Fase 1: Equipa Mínima (Meses 0-3) - 3 pessoas
 
 ```
-CEO (Eduardo Cardoso)
+CEO (Edivaldo Cardoso)
     ├── CTO (A contratar)
-    │   └── Desenvolvedor Backend
-    │   └── Desenvolvedor Mobile
-    └── COO (A contratar)
-        └── Coordenador Operacional
+    └── COO (A contratar - meio período)
 ```
 
-**Budget salários:** 25.000 EUR/mês
+**Budget salários:** 10.000 EUR/mês
 
 #### Fase 2: Equipa de Crescimento (Meses 4-9) - 12 pessoas
 
@@ -1218,17 +1216,17 @@ O **Ecobank** é o parceiro ideal para a Run-Run pelos seguintes motivos:
 
 #### Estrutura do Empréstimo
 
-**Montante:** 750.000 EUR
+**Montante:** 50.000.000 XOF (76.336 EUR)
 
 **Tipo:** Empréstimo Bancário Empresarial - Linha Inovação Tech
 
-**Prazo Total:** 6 anos (72 meses)
+**Prazo Total:** 3 anos (36 meses)
 
-**Período de Carência:** 18 meses (apenas juros)
-- Justificativa: Tempo para lançar, crescer, atingir fluxo de caixa positivo
+**Período de Carência:** 6 meses (apenas juros)
+- Justificativa: Tempo para lançar e atingir fluxo de caixa inicial
 - Durante carência: Pagamento apenas de juros mensais
 
-**Período de Amortização:** 54 meses (após carência)
+**Período de Amortização:** 30 meses (após carência)
 - Pagamento mensal fixo de principal + juros
 - Sistema Price (parcelas iguais)
 
@@ -1239,15 +1237,14 @@ O **Ecobank** é o parceiro ideal para a Run-Run pelos seguintes motivos:
 
 **Garantias Oferecidas:**
 
-1. **Propriedade Intelectual (Valor: 200.000 EUR)**
+1. **Propriedade Intelectual (Valor: 15.000.000 XOF / 22.901 EUR)**
    - Código-fonte da plataforma (apps + backend)
    - Marca registrada "Run-Run"
    - Patente do sistema de zonas vermelhas
    - Base de dados de usuários e motoristas
 
-2. **Equipamentos e Ativos (Valor: 50.000 EUR)**
-   - Hardware (servidores, computadores, mobília)
-   - Veículos da empresa (se houver)
+2. **Equipamentos e Ativos (Valor: 5.000.000 XOF / 7.634 EUR)**
+   - Hardware (computadores, mobília)
    - Equipamento de escritório
 
 3. **Recebíveis Futuros (Valor: Variável)**
@@ -1261,81 +1258,56 @@ O **Ecobank** é o parceiro ideal para a Run-Run pelos seguintes motivos:
    - Alinha interesses (skin in the game)
 
 5. **Conta de Reserva (20% do empréstimo)**
-   - 150.000 EUR mantidos em conta bloqueada no Ecobank
+   - 10.000.000 XOF (15.267 EUR) mantidos em conta bloqueada no Ecobank
    - Liberados gradualmente conforme atingimento de milestones
    - Garante capacidade de pagamento
 
-**Total de Garantias Estimado: 400.000+ EUR (53% do empréstimo)**
+**Total de Garantias Estimado: 30.000.000+ XOF (60% do empréstimo)**
 
 #### Cronograma de Desembolso
 
-**Tranche 1: 300.000 EUR - Mês 0 (Imediato)**
+**Desembolso Único: 50.000.000 XOF - Mês 0 (Imediato)**
 - **Uso:**
-  - Marketing pré-lançamento: 60.000 EUR
-  - Setup técnico e licenças: 50.000 EUR
-  - Recrutamento equipa inicial: 80.000 EUR
-  - Legal e regulamentação: 30.000 EUR
-  - Escritório e equipamento: 40.000 EUR
-  - Reserva operacional inicial: 40.000 EUR
+  - Marketing pré-lançamento e lançamento: 10.000.000 XOF
+  - Setup técnico e licenças: 8.000.000 XOF
+  - Salários equipa inicial (6 meses): 15.000.000 XOF
+  - Legal e regulamentação: 5.000.000 XOF
+  - Escritório e equipamento: 3.000.000 XOF
+  - Incentivos motoristas e usuários: 7.000.000 XOF
+  - Capital de giro e reservas: 2.000.000 XOF
 - **Condição:** Aprovação de crédito
 - **Timeline:** Desembolso imediato após contrato
 
-**Tranche 2: 300.000 EUR - Mês 3**
-- **Uso:**
-  - Marketing lançamento: 80.000 EUR
-  - Infraestrutura tech adicional: 25.000 EUR
-  - Expansão de equipa: 70.000 EUR
-  - Incentivos motoristas: 80.000 EUR
-  - Capital de giro: 45.000 EUR
-- **Condição:** 
-  - ✅ 50+ motoristas registrados
-  - ✅ 2.000+ usuários ativos
-  - ✅ 100+ viagens/dia por 2 semanas consecutivas
-- **Timeline:** Verificação pelo banco em Mês 3
-
-**Tranche 3: 150.000 EUR - Mês 6**
-- **Uso:**
-  - Marketing crescimento: 30.000 EUR
-  - Tech upgrades: 20.000 EUR
-  - Equipa expandida: 40.000 EUR
-  - Incentivos contínuos: 40.000 EUR
-  - Capital de giro: 20.000 EUR
-- **Condição:**
-  - ✅ 200+ motoristas ativos
-  - ✅ 10.000+ usuários registrados
-  - ✅ 500+ viagens/dia
-  - ✅ NPS > 50
-  - ✅ Taxa de retenção motoristas > 75%
-- **Timeline:** Verificação pelo banco em Mês 6
-
-**Benefícios do Desembolso em Tranches:**
-- ✅ Reduz risco para o banco (performance milestones)
-- ✅ Alinha interesses (empresa motivada a atingir metas)
-- ✅ Menor custo de juros (não pagar juros sobre capital não usado)
-- ✅ Disciplina financeira (uso eficiente de recursos)
+**Benefícios do Desembolso Único:**
+- ✅ Simplicidade administrativa
+- ✅ Execução mais rápida do plano
+- ✅ Menor risco de atrasos por milestones
+- ✅ Foco total na operação vs reporting
 
 #### Retorno ao Ecobank
 
 **Simulação de Pagamento - Taxa 10% a.a.**
 
-**Fase 1: Carência (Meses 1-18)**
+**Fase 1: Carência (Meses 1-6)**
 - Pagamento: Apenas juros
-- Juros mensais: 750.000 × 10% / 12 = 6.250 EUR/mês
-- Total pago em 18 meses: 112.500 EUR
+- Juros mensais: 50.000.000 × 10% / 12 = 416.667 XOF/mês (636 EUR/mês)
+- Total pago em 6 meses: 2.500.000 XOF (3.817 EUR)
 
-**Fase 2: Amortização (Meses 19-72)**
-- Parcela mensal fixa: 16.964 EUR
-- Total de 54 parcelas: 915.656 EUR
+**Fase 2: Amortização (Meses 7-36)**
+- Parcela mensal fixa: 1.793.370 XOF (2.738 EUR)
+- Total de 30 parcelas: 53.801.100 XOF (82.139 EUR)
 - Contém principal + juros decrescentes
 
-**Total Pago ao Banco em 6 anos: 1.028.156 EUR**
+**Total Pago ao Banco em 3 anos: 56.301.100 XOF (85.956 EUR)**
 
 **Breakdown:**
-- Principal: 750.000 EUR
-- Juros totais: 278.156 EUR
-- **Retorno para o banco: +37% sobre valor emprestado**
+- Principal: 50.000.000 XOF (76.336 EUR)
+- Juros totais: 6.301.100 XOF (9.620 EUR)
+- **Retorno para o banco: +12,6% sobre valor emprestado**
 
 **Taxa Interna de Retorno (TIR) para o Banco: 10% a.a.** ✅ Atrativa
+
+*Conversão: 1 EUR ≈ 655 XOF*
 
 #### Fluxo de Caixa e Capacidade de Pagamento
 
@@ -1601,11 +1573,11 @@ A **Run-Run** representa uma **oportunidade única** de investimento no setor de
 
 Solicitamos ao **Ecobank Guiné-Bissau**:
 
-📋 **Montante:** 750.000 EUR  
-⏱️ **Prazo:** 6 anos (18 meses carência + 54 meses amortização)  
+📋 **Montante:** 50.000.000 XOF (76.336 EUR)  
+⏱️ **Prazo:** 3 anos (6 meses carência + 30 meses amortização)  
 💰 **Taxa:** 10% a.a. (negociável)  
 🔒 **Garantias:** Propriedade intelectual, equipamentos, recebíveis, aval  
-🎯 **Desembolso:** 3 tranches ligadas a milestones (300K + 300K + 150K)  
+🎯 **Desembolso:** Único (50M XOF imediato)  
 
 ### 9.4 Compromisso da Run-Run
 
@@ -1654,8 +1626,8 @@ Bissau, Guiné-Bissau
 📱 Telefone: +245 [número]  
 🌐 Website: www.runrun.gw  
 
-**CEO & Fundador - Eduardo Cardoso**  
-📧 eduardo.cardoso@runrun.gw  
+**CEO & Fundador - Edivaldo Cardoso**  
+📧 edivaldo.cardoso@runrun.gw  
 📱 +245 [número WhatsApp]  
 💼 LinkedIn: [link]  
 
