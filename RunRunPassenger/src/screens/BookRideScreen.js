@@ -14,10 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI, verifyToken } from '../services/api';
 
 export default function BookRideScreen({ navigation, route }) {
-  console.log('=== BOOKRIDESCREEN COMPONENT RENDERED ===');
-  console.log('Navigation state:', navigation);
-  console.log('Route params:', route.params);
-  
   const { t } = useTranslation();
   const [pickupLocation, setPickupLocation] = useState(null);
   const [dropoffLocation, setDropoffLocation] = useState(null);
@@ -51,12 +47,10 @@ export default function BookRideScreen({ navigation, route }) {
   ];
 
   useEffect(() => {
-    console.log('BookRideScreen mounted, loading payment methods...');
     loadPaymentMethods();
     
     // Reset loading state when screen comes into focus
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log('BookRideScreen focused');
       setLoading(false);
       setCurrentRideId(null);
     });
@@ -76,16 +70,12 @@ export default function BookRideScreen({ navigation, route }) {
   }, [vehicleType, pickupLocation, dropoffLocation]);
 
   const loadPaymentMethods = async () => {
-    console.log('=== LOAD PAYMENT METHODS STARTED ===');
-    
     // Wait a bit to ensure token is stored
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Verify token before making API call
     const tokenCheck = await verifyToken();
     if (!tokenCheck.valid) {
-      console.log('❌ No valid token found, cannot load payment methods');
-      Alert.alert('Authentication Error', 'No valid authentication token found. Please login again.');
       setError('Authentication failed. Please login again.');
       setPaymentMethods([]);
       setSelectedPayment(null);
@@ -94,36 +84,22 @@ export default function BookRideScreen({ navigation, route }) {
     }
     
     try {
-      console.log('Fetching payment methods...');
-      console.log('API URL should be:', 'https://zippy-healing-production-24e4.up.railway.app/api/payment-methods');
-
       const response = await passengerAPI.getPaymentMethods();
-
-      console.log('=== PAYMENT METHODS RESPONSE RECEIVED ===');
-      console.log('Response status:', response.status);
-      console.log('Response data:', JSON.stringify(response.data, null, 2));
-      
-      // Backend returns: { success: true, paymentMethods: [...] }
       const methods = response.data.paymentMethods || response.data || [];
-      console.log('Payment methods loaded:', methods.length);
       
       setPaymentMethods(methods);
       
       if (methods.length === 0) {
-        console.log('No payment methods found - user needs to add one');
         setError('No payment methods found. Please add a payment method first.');
         setSelectedPayment(null);
       } else {
         const defaultMethod = methods.find((pm) => pm.isDefault || pm.is_default);
         setSelectedPayment(defaultMethod || methods[0]);
-        setError(null); // Clear any previous error
+        setError(null);
       }
       
       setInitialLoading(false);
     } catch (error) {
-      console.error('Error loading payment methods:', error);
-      console.error('Error details:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       
       let errorMessage = 'Failed to load payment methods';
       if (error.response?.status === 401) {
@@ -166,7 +142,7 @@ export default function BookRideScreen({ navigation, route }) {
       // Backend returns data in 'estimate' object
       const estimate = response.data.estimate || response.data;
       
-      console.log('Fare estimate received:', estimate);
+      setFareDetails(estimate);
       
       setEstimatedFare(estimate.totalFare);
       setFareDetails({
@@ -180,13 +156,11 @@ export default function BookRideScreen({ navigation, route }) {
 
       // Show red zone warning if applicable
       if (estimate.isRedZone) {
-        console.log('Red zone detected:', estimate.redZoneInfo);
         setShowRedZoneWarning(true);
       } else {
         setShowRedZoneWarning(false);
       }
     } catch (error) {
-      console.error('Error calculating fare:', error);
       setEstimatedFare(null);
       setFareDetails(null);
       Alert.alert('Error', 'Failed to calculate fare. Please try again.');
@@ -260,48 +234,28 @@ export default function BookRideScreen({ navigation, route }) {
         paymentMethodId: selectedPayment.id,
       };
       
-      console.log('Booking data:', JSON.stringify(bookingData));
-      console.log('Calling API: POST /rides/request');
-      
       const response = await rideAPI.createRide(bookingData);
       
-      console.log('=== API RESPONSE ===');
-      console.log('Status:', response.status);
-      console.log('Data:', JSON.stringify(response.data));
-      
       const rideId = response.data?.id || response.data?.ride?.id || response.data?.rideId;
-      console.log('Extracted ride ID:', rideId);
       
       if (!rideId) {
-        console.error('NO RIDE ID IN RESPONSE!');
-        console.error('Full response:', JSON.stringify(response));
         setBookingError('Ride requested but ID not returned. Please try again.');
         setLoading(false);
         Alert.alert('Booking Error', 'Could not create ride. Please try again.');
-        return; // STOP HERE - don't navigate
+        return;
       }
       
-      // Only navigate if we have a valid ride ID
+      // Navigate to active ride screen
       setCurrentRideId(rideId);
-      console.log('✅ SUCCESS! Navigating to ActiveRide with ID:', rideId);
-      
-      // Navigate first, then reset state
       navigation.navigate('ActiveRide', { rideId });
       
-      // Small delay to ensure navigation completes before resetting
+      // Reset state after navigation
       setTimeout(() => {
         setLoading(false);
         setCurrentRideId(null);
       }, 100);
       
     } catch (error) {
-      console.error('=== BOOKING ERROR ===');
-      console.error('Error type:', error.constructor.name);
-      console.error('Error message:', error.message);
-      console.error('Error response:', error.response);
-      console.error('Error response data:', error.response?.data);
-      console.error('Error response status:', error.response?.status);
-      
       const message = error.response?.data?.message || 
                       error.response?.data?.error || 
                       error.message || 
@@ -311,11 +265,7 @@ export default function BookRideScreen({ navigation, route }) {
       setLoading(false);
       setCurrentRideId(null);
       
-      Alert.alert(
-        'Booking Failed',
-        message,
-        [{ text: 'OK', onPress: () => console.log('User dismissed error alert') }]
-      );
+      Alert.alert('Booking Failed', message);
     }
   };
 
@@ -333,7 +283,6 @@ export default function BookRideScreen({ navigation, route }) {
       setBookingError(null);
       Alert.alert('Cancelado', 'Busca por motorista cancelada com sucesso.');
     } catch (error) {
-      console.error('Error cancelling ride:', error);
       setLoading(false);
       setCurrentRideId(null);
       Alert.alert('Erro', 'Falha ao cancelar a busca. Por favor, tente novamente.');
@@ -366,8 +315,6 @@ export default function BookRideScreen({ navigation, route }) {
       </View>
     );
   }
-
-  console.log('Rendering BookRideScreen UI');
 
   return (
     <>

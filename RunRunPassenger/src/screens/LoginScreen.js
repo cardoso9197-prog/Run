@@ -34,45 +34,29 @@ export default function LoginScreen({ navigation }) {
       const response = await authAPI.login({
         phone: formattedPhone,
         password,
-      }).catch(err => {
-        console.error('Login API Error:', err);
-        throw err;
       });
-
-      console.log('Login response:', response?.data);
 
       if (response && response.data && response.data.token) {
         // Store token and user info
-        console.log('Storing token in AsyncStorage...');
         await AsyncStorage.setItem('userToken', response.data.token);
-        console.log('Token stored successfully');
-        
         await AsyncStorage.setItem('userRole', 'passenger');
-        console.log('User role stored');
         
         // Store user data if available
         if (response.data.user) {
           await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
-          console.log('User data stored');
         }
         
-        // Verify token was stored
-        const storedToken = await AsyncStorage.getItem('userToken');
-        console.log('Verification - stored token:', storedToken ? 'YES' : 'NO');
-        
-        // Navigate to home or reload app
-        console.log('Navigating to Home screen...');
+        // Navigate to home
         setTimeout(() => {
           navigation.reset({
             index: 0,
             routes: [{ name: 'Home' }],
           });
-        }, 500); // Small delay to ensure storage is complete
+        }, 500);
       } else {
         Alert.alert('Login Failed', 'Invalid response from server');
       }
     } catch (error) {
-      console.error('Login error:', error);
       Alert.alert(
         'Login Failed',
         error?.response?.data?.message || error?.message || 'Invalid phone or password'
