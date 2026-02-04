@@ -3,8 +3,8 @@
 
 **Date:** February 4, 2026  
 **Company:** Run-Run Tech Solutions  
-**Funding Request:** 750.000 EUR  
-**Target Banks:** BCAO/BCEAO, ECOBANK  
+**Funding Request:** 50.000.000 XOF (76.336 EUR) - Phase 1 Pilot  
+**Target Bank:** ECOBANK Guinea-Bissau  
 
 ---
 
@@ -17,11 +17,11 @@
 ✅ **6 Months Development** - Battle-tested technology  
 ✅ **Unique Innovation** - Red Zone system for bad roads (38+ areas mapped)  
 ✅ **Local Payment Integration** - Orange Money, MTN, E-Mola, cards, cash  
-✅ **Experienced Team** - 8+ years in tech and startups  
+✅ **Experienced Founder** - Edivaldo Cardoso, 8+ years tech/startup experience, lead programmer  
 
-### Market Opportunity
+### Phase 1 Pilot Market
 - **Total Market:** 642,000 urban population
-- **Target Year 1:** 22,500 users, 500 drivers
+- **Pilot Target:** 500 users, 10 drivers in first 6 months
 - **Current Market Size:** 41.8-83.6 million EUR annually
 - **Competition:** NONE (first mover advantage)
 - **Smartphone Penetration:** 85% and growing
@@ -36,8 +36,8 @@
 - 20% commission on each ride
 - Average ride: 2,000 XOF (~3 EUR)
 - Run-Run earns: 400 XOF (~0.60 EUR) per ride
-- Year 1 Target: 540,000 rides
-- Year 5 Target: 14.4 million rides
+- Pilot Phase Target: 3,600 rides (6 months)
+- Year 1 Target: 540,000 rides (after scaling)
 
 **2. Driver Subscriptions** (5% of revenue)
 - Basic: Free
@@ -65,35 +65,33 @@
 
 ## FINANCIAL PROJECTIONS
 
-### 5-Year Summary
+### Phase 1 Pilot (6 Months) + Growth Trajectory
 
-| Year | Drivers | Rides/Month | Revenue (EUR) | Profit (EUR) | EBITDA % |
-|------|---------|-------------|---------------|--------------|----------|
-| 2026 | 500 | 45,000 | 51,306 | -23,810 | -30% |
-| 2027 | 1,200 | 180,000 | 439,560 | 77,510 | 17% |
-| 2028 | 2,500 | 400,000 | 976,800 | 396,797 | 30% |
-| 2029 | 4,000 | 750,000 | 1,831,502 | 641,325 | 35% |
-| 2030 | 6,000 | 1,200,000 | 2,930,403 | 1,099,358 | 40% |
-| **Total** | | | **6,229,571** | **2,191,180** | |
+| Phase | Duration | Drivers | Rides/Month | Revenue (XOF) | Status |
+|-------|----------|---------|-------------|---------------|--------|
+| **Pilot** | 6 months | 10 | 600 | 2.880.000 | **This Loan** |
+| Year 1 | 12 months | 50 | 3,000 | 14.400.000 | After pilot success |
+| Year 2 | 12 months | 150 | 12,000 | 57.600.000 | Scale-up phase |
+| Year 3 | 12 months | 300 | 30,000 | 144.000.000 | Breakeven target |
 
-**Key Metrics:**
-- 🎯 **Break-Even:** Year 3 (Month 30)
-- 📈 **Revenue CAGR:** 175% (Years 1-5)
-- 💰 **Cumulative Profit (5Y):** 2.19 million EUR
-- 🚀 **ROI:** 300% in 5 years for equity investors
+**Pilot Phase Metrics:**
+- 🎯 **Investment:** 50.000.000 XOF (76.336 EUR)
+- 📈 **Target:** 10 active drivers, 500 registered users
+- 💰 **Revenue Goal:** 2.880.000 XOF/month by month 6
+- 🚀 **Success Criteria:** 20+ rides/day, 4.5+ rating, <10% churn
 
-### Use of Funds (750,000 EUR)
+### Use of Pilot Funds (50.000.000 XOF / 76.336 EUR)
 
-| Category | Amount (EUR) | % | Purpose |
-|----------|--------------|---|---------|
-| **Marketing & Launch** | 150,000 | 20% | Pre-launch, event, digital ads, radio/TV |
-| **Salaries (12 months)** | 200,000 | 27% | CEO, CTO, COO, 2 devs, operations |
-| **Technology** | 80,000 | 11% | Cloud infrastructure, APIs, licenses |
-| **Legal & Licenses** | 50,000 | 7% | Operating licenses, insurance, legal |
-| **Market Incentives** | 150,000 | 20% | Driver bonuses, free rides, referrals |
-| **Office & Equipment** | 60,000 | 8% | Rent, computers, furniture, utilities |
-| **Working Capital** | 60,000 | 8% | 3-month reserve, contingencies |
-| **TOTAL** | **750,000** | **100%** | |
+| Category | Amount (XOF) | Amount (EUR) | % | Purpose |
+|----------|--------------|--------------|---|---------|
+| **Marketing & Launch** | 8.000.000 | 12.214 | 16% | Pre-launch event, social media, 200 free rides |
+| **Salaries (6 months)** | 20.000.000 | 30.534 | 40% | CEO/CTO/COO part-time (3 people) |
+| **Technology** | 5.000.000 | 7.634 | 10% | Cloud, APIs, licenses for 6 months |
+| **Legal & Licenses** | 4.000.000 | 6.107 | 8% | Operating license, insurance, legal fees |
+| **Driver Incentives** | 7.000.000 | 10.687 | 14% | 10 driver bonuses + fuel support |
+| **Office & Equipment** | 3.000.000 | 4.580 | 6% | Basic office setup, equipment |
+| **Working Capital** | 3.000.000 | 4.580 | 6% | 2-month reserve, contingencies |
+| **TOTAL** | **50.000.000** | **76.336** | **100%** | |
 
 ---
 
@@ -149,107 +147,108 @@
 ### Key Hires (Month 1-3)
 
 **CTO (To Hire)**
+### Initial Team (Phase 1 Pilot)
+
+**Edivaldo Cardoso - Founder, CEO & Lead Programmer**
+- 8+ years tech and startup experience
+- Full-stack development expertise
+- Built entire platform (6 months development)
+- Mobile expertise (iOS/Android/React Native)
+- Fintech integration experience
+- Direct oversight of all operations
+
+**2 Part-Time Team Members:**
+- Operations Manager: Driver recruitment, customer support
+- Marketing Specialist: Social media, launch event coordination
+
+### Expansion Team (After Pilot Success)
+
+**CTO (To Hire - Month 9)**
 - 10+ years software development
 - Experience with large-scale apps
 - Mobile expertise (iOS/Android)
 - Fintech or marketplace background
 
-**COO (To Hire)**
+**COO (To Hire - Month 12)**
 - 6+ years operations and logistics
 - Large team management
 - Urban mobility knowledge
 - Metrics-driven execution
 
-**CFO (To Hire - Month 6)**
-- 8+ years corporate finance
-- Startup or tech experience
-- Emerging markets knowledge
-- Banking relationships
-
-### Advisory Board (To Form)
-
-- Urban Mobility Expert (Uber/Bolt experience)
-- Senior Banking Executive (fintech expertise)
-- Technology Leader (CTO from successful startup)
-- Local Entrepreneur (Guinea-Bissau success story)
-
 ---
 
 ## GO-TO-MARKET STRATEGY
 
-### Launch Plan (3 Phases)
+### Phase 1 Pilot Launch Plan (Months 1-6)
 
-**Phase 1: Soft Launch (Months 1-3)**
-- Target: 50 drivers, 2,000 users, 100 rides/day
-- Closed beta with 500 early adopters
+**Preparation (Month 1-2)**
+- Recruit and train 10 drivers
+- Onboard 50 beta testers
+- Set up operations center
+- Launch marketing campaign
+
+**Beta Testing (Month 3-4)**
+- 50 active users, 10 drivers
+- Target: 10 rides/day
 - Intensive monitoring and adjustments
-- 1,000 free rides promotion
-- 25 carefully screened drivers
+- 200 free rides promotion
+- Carefully screened drivers with training
 
-**Phase 2: Rapid Growth (Months 4-6)**
-- Target: 300 drivers, 15,000 users, 800 rides/day
-- Full marketing campaign (radio, TV, digital)
-- 10 strategic billboard locations
-- University partnerships (student discounts)
-- 5 pilot corporate accounts
+**Growth Phase (Month 5-6)**
+- Expand to 500 users
+- Target: 20 rides/day
+- Implement referral program
+- 2 pilot corporate accounts
+- Prepare for scale-up (if successful)
 
-**Phase 3: Scale (Months 7-12)**
-- Target: 500 drivers, 25,000 users, 1,500 rides/day
-- 20 corporate accounts
-- Premium driver subscriptions launched
-- Break-even on monthly operations
-- Regional expansion planning (Gabú, Bafatá)
+### Pilot Marketing Mix (Focused Approach)
 
-### Marketing Mix (360° Approach)
-
-**Digital (40% of budget) - 60,000 EUR/Year**
-- Facebook/Instagram ads (location/age targeted)
-- Google Ads (search + display)
+**Digital (50% of budget) - 4.000.000 XOF**
+- Facebook/Instagram ads (location targeted Bissau)
 - WhatsApp Business (support + promos)
 - TikTok viral videos
-- Influencer partnerships
+- Influencer partnerships (3 local influencers)
 
-**Traditional (30% of budget) - 45,000 EUR/Year**
-- Radio spots on 5 main stations
-- TV commercials (TGB prime time)
-- 15 strategic billboards
-- Print materials (flyers, posters)
+**Traditional (20% of budget) - 1.600.000 XOF**
+- Radio spots on 2 main stations
+- Print materials (flyers, posters in key locations)
+- 5 strategic banner locations
 
-**Experiential (20% of budget) - 30,000 EUR/Year**
-- Grand launch event (3 locations)
-- University activations
+**Experiential (20% of budget) - 1.600.000 XOF**
+- Launch event (Bissau center)
+- University activation
 - Hotel partnerships (airport transfers)
-- Driver Day celebrations
 
-**Viral (10% of budget) - 15,000 EUR/Year**
-- Referral program (1,000 XOF per friend)
-- Driver-recruits-driver bonus (25,000 XOF)
-- Gamification badges
-- Monthly contests
+**Viral (10% of budget) - 800.000 XOF**
+- Referral program (500 XOF per friend)
+- Driver-recruits-driver bonus (10.000 XOF)
+- Monthly driver contests
 
 ---
 
 ## SOCIAL & ECONOMIC IMPACT
 
-### Job Creation
+### Job Creation (Pilot Phase)
 
 **Direct Employment:**
-- Year 1: 12 full-time employees
-- Year 5: 70 full-time employees
-- 5-Year Payroll: 12.1 million EUR
+- 3 part-time positions (CEO/CTO, Operations, Marketing)
+- Pilot budget: 20.000.000 XOF (6 months)
 
 **Indirect Employment (Drivers):**
-- Year 1: 500 drivers averaging 400 EUR/month
-- Year 5: 6,000 drivers averaging 700 EUR/month
-- 5-Year Driver Income: 109.2 million EUR
+- 10 drivers averaging 200.000 XOF/month
+- 6-Month Driver Income: 12.000.000 XOF (18.320 EUR)
 
 **Tertiary Jobs:**
-- +50 mechanics (vehicle maintenance)
-- +20 insurance agents
-- +30 gas station workers
-- +15 tech suppliers
+- +5 mechanics (vehicle maintenance)
+- +2 insurance agents
+- +3 gas station workers
 
-**Total Impact: 6,685 jobs** (direct + indirect + tertiary)
+**Pilot Total Impact: 23 jobs** (direct + indirect + tertiary)
+
+### Future Growth Potential (After Pilot)
+- Year 1: 50 drivers = 50+ direct/indirect jobs
+- Year 3: 300 drivers = 350+ jobs
+- Year 5: 1,000+ drivers = 1,200+ jobs
 
 ### Financial Inclusion
 
@@ -300,105 +299,85 @@
 
 ### UN Sustainable Development Goals Alignment
 
-✅ **SDG 8:** Decent Work & Economic Growth (6,000+ jobs)  
+✅ **SDG 8:** Decent Work & Economic Growth (23+ immediate jobs, 1,200+ potential)  
 ✅ **SDG 9:** Industry, Innovation & Infrastructure (digital platform)  
 ✅ **SDG 10:** Reduced Inequalities (accessible transport for all)  
 ✅ **SDG 11:** Sustainable Cities (efficient urban mobility)  
-✅ **SDG 13:** Climate Action (-30% unnecessary km = -54,000 tons CO2/year by Year 5)
+✅ **SDG 13:** Climate Action (reduced unnecessary kilometers = lower CO2)
 
 ---
 
 ## FUNDING REQUEST
 
-### Loan Structure
+### Loan Structure (Phase 1 Pilot)
 
-**Amount:** 750,000 EUR  
-**Type:** Business Loan - Tech Innovation Line  
-**Term:** 6 years (72 months)  
-**Grace Period:** 18 months (interest-only)  
-**Amortization:** 54 months (after grace)  
-**Interest Rate:** 10% per annum (negotiable)  
+**Amount:** 50.000.000 XOF (76.336 EUR at 655 XOF/EUR)  
+**Type:** Business Loan - Tech Innovation / SME Development  
+**Term:** 3 years (36 months)  
+**Grace Period:** 6 months (interest-only)  
+**Amortization:** 30 months (after grace)  
+**Interest Rate:** 10% per annum (ECOBANK standard rate)  
 
-### Disbursement Schedule (3 Tranches)
+### Disbursement (Single Tranche)
 
-**Tranche 1: 300,000 EUR - Month 0**
-- Condition: Credit approval
-- Use: Marketing, tech setup, team, office, initial reserve
+**Full Amount: 50.000.000 XOF - Month 0**
+- Condition: Credit approval + signed agreement
+- Use: 6-month pilot program (marketing, team, tech, drivers, reserve)
+- Monitoring: Monthly progress reports to bank
 
-**Tranche 2: 300,000 EUR - Month 3**
-- Conditions: 
-  - 50+ drivers registered
-  - 2,000+ active users
-  - 100+ rides/day for 2 consecutive weeks
-- Use: Marketing scale-up, tech expansion, driver incentives
+### Collateral Offered (60% Coverage)
 
-**Tranche 3: 150,000 EUR - Month 6**
-- Conditions:
-  - 200+ active drivers
-  - 10,000+ registered users
-  - 500+ rides/day
-  - NPS > 50
-  - Driver retention > 75%
-- Use: Growth marketing, tech upgrades, expanded team
-
-### Collateral Offered
-
-1. **Intellectual Property:** 200,000 EUR value
+1. **Intellectual Property:** 20.000.000 XOF value
    - Platform source code (apps + backend)
    - "Run-Run" registered trademark
-   - Red Zone system patent
+   - Red Zone system innovation
    - User/driver database
 
-2. **Equipment & Assets:** 50,000 EUR value
-   - Hardware (servers, computers, furniture)
-   - Company vehicles (if any)
+2. **Equipment & Assets:** 5.000.000 XOF value
+   - Hardware (computers, equipment)
    - Office equipment
+   - Technology infrastructure
 
-3. **Future Receivables:** Variable value
+3. **Future Receivables:**
    - Corporate client accounts receivable
    - Partner contracts
-   - Assignment of up to 30% monthly receivables
+   - Assignment of up to 30% monthly receivables (after pilot)
 
-4. **Personal Guarantee:** Founder collateral
-   - Personal commitment from founders
-   - Demonstrates confidence in project
+4. **Personal Guarantee:** 
+   - Founder Edivaldo Cardoso personal commitment
+   - Demonstrates confidence in project success
    - Aligns interests (skin in the game)
 
-5. **Reserve Account:** 150,000 EUR (20% of loan)
-   - Held in blocked account at lending bank
-   - Released gradually upon milestone achievement
+5. **Reserve Account:** 5.000.000 XOF (10% of loan)
+   - Held in blocked account at ECOBANK
+   - Released after pilot completion
    - Ensures payment capacity
 
-**Total Collateral: 400,000+ EUR (53% of loan)**
+**Total Collateral: 30.000.000+ XOF (60% of loan)**
 
-### Return to Bank
+### Return to ECOBANK
 
 **Payment Simulation - 10% p.a. Interest**
 
-**Phase 1: Grace Period (Months 1-18)**
+**Phase 1: Grace Period (Months 1-6)**
 - Payment: Interest only
-- Monthly interest: 6,250 EUR
-- Total in 18 months: 112,500 EUR
+- Monthly interest: 416.667 XOF
+- Total in 6 months: 2.500.000 XOF
 
-**Phase 2: Amortization (Months 19-72)**
-- Fixed monthly payment: 16,964 EUR
-- Total of 54 payments: 915,656 EUR
+**Phase 2: Amortization (Months 7-36)**
+- Fixed monthly payment: 2.194.146 XOF
+- Total of 30 payments: 65.824.380 XOF
 - Contains principal + decreasing interest
 
-**Total Paid to Bank in 6 Years: 1,028,156 EUR**
+**Total Paid to Bank in 3 Years: 68.324.380 XOF**
 
 **Breakdown:**
-- Principal: 750,000 EUR
-- Total interest: 278,156 EUR
+- Principal: 50.000.000 XOF
+- Total interest: 18.324.380 XOF
 - **Bank Return: +37% on amount lent**
-- **IRR for Bank: 10% p.a.** ✅ Attractive
+- **IRR for Bank: 10% p.a.** ✅ Attractive and secure
 
-### Payment Capacity Demonstration
-
-| Year | Revenue | Net Profit | Annual Payment | Payment/Profit | Status |
-|------|---------|-----------|----------------|----------------|--------|
-| 2026 | 51,306 | -23,810 | 75,000* | - | ❌ Grace justified |
-| 2027 | 439,560 | 77,510 | 135,000 | 57% | ✅ Comfortable |
+### Payment Capacity (Post-Pilot)
 | 2028 | 976,800 | 396,797 | 203,568 | 51% | ✅ Comfortable |
 | 2029 | 1,831,502 | 641,325 | 203,568 | 32% | ✅ Easy |
 | 2030 | 2,930,403 | 1,099,358 | 203,568 | 19% | ✅ Easy |
@@ -418,41 +397,46 @@
 **Risk 1: Slow Driver Adoption**
 - Probability: 30% (Medium)
 - Impact: High
+**Risk 1: Difficulty Recruiting Drivers**
+- Probability: 30% (Medium)
+- Impact: High
 - Mitigation:
-  - Generous incentives (50K XOF/100 rides)
+  - Generous pilot incentives (20K XOF/50 rides)
   - Free training + dedicated support
   - Guaranteed minimum earnings (first 3 months)
   - Competitive commissions (80% vs 60-70% mature markets)
+  - Start small (10 drivers) for quality control
 
 **Risk 2: Low Passenger Adoption**
 - Probability: 20% (Low-Medium)
 - Impact: High
 - Mitigation:
-  - First ride free (10,000 users)
-  - Aggressive multi-channel marketing
+  - 200 free rides promotion
+  - Aggressive social media marketing
   - Competitive pricing vs traditional taxis
   - Focus on safety and convenience
-  - Corporate partnerships
+  - University partnerships for early adopters
 
 **Risk 3: International Competition Entry (Uber, Bolt)**
-- Probability: 40% (Medium-High)
+- Probability: 40% (Medium-High - but not immediate)
 - Impact: High
 - Mitigation:
-  - First mover advantage (12-24 month lead)
+  - First mover advantage (establish before they notice)
   - Deep local knowledge
   - Unique Red Zone system
   - Full local payment integration
   - Lower operating costs (local team)
+  - Pilot validates model before major competition
 
 **Risk 4: Higher Than Projected Costs**
 - Probability: 35% (Medium)
 - Impact: Medium
 - Mitigation:
-  - 20% buffer in budget
+  - 6% buffer in budget (3M XOF contingency)
   - Rigorous monthly expense control
   - Real-time financial dashboard
   - Quick cuts if necessary (marketing first)
-  - 60,000 EUR contingency reserve
+  - Lean pilot approach (3-person team)
 
 **Risk 5: Regulatory Changes**
 - Probability: 20% (Low-Medium)
@@ -463,6 +447,7 @@
   - Permanent legal counsel
   - Flexibility to adapt model
   - Highlight social benefits (jobs, taxes)
+  - Pilot allows testing regulatory response
 
 **Risk 6: Safety Incidents**
 - Probability: 25% (Medium)
@@ -475,6 +460,7 @@
   - 24/7 emergency support
   - Two-way rating system
   - Automatic banning of bad actors
+  - Small pilot allows close monitoring
 
 ---
 
@@ -492,33 +478,114 @@
 - No ride-hailing platforms in Guinea-Bissau
 - Traditional taxis outdated and unsafe
 - Informal moto-taxis without tracking
-- First mover locks in market
+- **First mover advantage - validate with pilot before competition notices**
 
 **3. Tech Stack Ready** 💻
 - Platform 100% developed and tested
 - 6 months of development already invested
 - Payment partnerships in advanced negotiation
-- 25 pilot drivers identified
+- 10 pilot drivers identified and interested
 
 **4. Regional Success Stories** 🚀
 - Uber: $80B+ valuation
 - Bolt: $8B+ valuation
 - SafeBoda (Uganda): Successful in similar market
 - Gokada (Nigeria): Motorbikes in megacity
+- **Proven model, untapped market**
 
 **5. Government Support** 🏛️
 - Digitalization initiatives
 - Encouraging formalization
 - Youth employment priority
 - Open to innovation
+- **Pilot demonstrates viability for future regulation**
 
 ---
 
-## VALUATION & EXIT STRATEGY
+## PILOT SUCCESS CRITERIA & NEXT PHASE
 
-### Current Valuation
+### Pilot Evaluation (Month 6)
 
-**Pre-Money Valuation:** 1,000,000 EUR (conservative)
+**Success = Go to Scale-Up Phase:**
+- ✅ 10 active drivers (80%+ availability)
+- ✅ 500+ registered users
+- ✅ 20+ rides/day average
+- ✅ 4.5+ average rating
+- ✅ <10% monthly churn rate
+- ✅ Break-even operations in month 6
+
+**If Successful → Phase 2 Funding:**
+- Request: 250.000.000 XOF (381K EUR)
+- Scale to: 50 drivers, 5,000 users
+- Timeline: 12 months
+- Secured by: proven pilot metrics
+
+**If Not Successful:**
+- Analyze data and pivot
+- Adjust model based on learnings
+- No further funding until fixed
+- Founder continues development with own resources
+
+---
+
+## CONTACT & NEXT STEPS
+
+**Edivaldo Cardoso**  
+Founder, CEO & Lead Programmer  
+Run-Run Tech Solutions
+
+📧 Email: edivaldocardoso@runrun-gw.com  
+📱 Phone: +245 955 000 000  
+🌐 Website: www.runrun-gw.com  
+📍 Address: Bissau, Guinea-Bissau
+
+### Immediate Next Steps
+
+1. **Week 1-2:** 
+   - Review this proposal
+   - Schedule meeting with ECOBANK credit team
+   - Present technology platform demo
+   - Answer additional questions
+
+2. **Week 3-4:**
+   - Submit formal credit application
+   - Provide requested financial documentation
+   - Collateral valuation
+   - Legal documentation preparation
+
+3. **Month 2:**
+   - Credit committee approval
+   - Sign loan agreement
+   - Disbursement of 50.000.000 XOF
+   - Launch pilot operations
+
+4. **Month 3-6:**
+   - Execute pilot plan
+   - Monthly progress reports to ECOBANK
+   - Collect success metrics
+   - Prepare scale-up proposal (if successful)
+
+---
+
+## APPENDICES AVAILABLE
+
+📎 **Appendix A:** Complete Financial Model (Excel 5-year projections)  
+📎 **Appendix B:** Technical Architecture Documentation  
+📎 **Appendix C:** Market Research Report (Guinea-Bissau mobility)  
+📎 **Appendix D:** Competitor Analysis (Regional ride-hailing)  
+📎 **Appendix E:** Legal Structure & Compliance Documentation  
+📎 **Appendix F:** Team CVs and References  
+📎 **Appendix G:** Partner Letters of Intent (Mobile money providers)  
+📎 **Appendix H:** Red Zone System Patent Application  
+📎 **Appendix I:** App Screenshots and User Flow  
+📎 **Appendix J:** Driver Recruitment Strategy  
+
+---
+
+**Document prepared by:** Edivaldo Cardoso, Founder & Lead Programmer  
+**Date:** February 4, 2026  
+**Version:** 2.0 - Phase 1 Pilot  
+**Confidential:** For ECOBANK Guinea-Bissau review only
 
 **Basis:**
 - Platform development: 200,000 EUR invested
