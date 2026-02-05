@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { QRCodeSVG } from 'qrcode.react'
 import { Smartphone, Download, Apple, Play } from 'lucide-react'
+import ComingSoonModal from './ComingSoonModal'
 
 // App download URLs - Updated January 9, 2026 with latest builds
 const APP_URLS = {
@@ -20,11 +21,31 @@ const APP_URLS = {
 export default function DownloadSection() {
   const [selectedApp, setSelectedApp] = useState<'passenger' | 'driver'>('passenger')
   const [selectedPlatform, setSelectedPlatform] = useState<'android' | 'ios'>('android')
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const currentUrl = APP_URLS[selectedApp][selectedPlatform]
+  // Generate QR code with "coming soon" message
+  const qrCodeMessage = `Em Breve Disponível! 🚀
+App estará brevemente disponível em Apple Store e Play Store para baixar.
+
+Volte mais logo! 🎉
+
+Para mais informação contacte:
+
+Edivaldo Cardoso
+Programador Líder & Fundador
+Run-Run Guiné-Bissau
+
+📞 +245 955 971 275
+✉️ suporte@runrungb.com`
+
+  const handleDownloadClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsModalOpen(true)
+  }
 
   return (
     <section id="download" className="py-20 bg-black">
+      <ComingSoonModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -132,10 +153,13 @@ export default function DownloadSection() {
             </div>
 
             {/* QR Code */}
-            <div className="bg-gray-800 rounded-3xl p-8 shadow-xl inline-block mb-8 border border-gray-700">
+            <div 
+              onClick={handleDownloadClick}
+              className="bg-gray-800 rounded-3xl p-8 shadow-xl inline-block mb-8 border border-gray-700 cursor-pointer hover:bg-gray-700 transition"
+            >
               <div className="bg-white rounded-2xl p-4">
                 <QRCodeSVG
-                  value={currentUrl}
+                  value={qrCodeMessage}
                   size={200}
                   level="H"
                   includeMargin={true}
@@ -144,21 +168,19 @@ export default function DownloadSection() {
                 />
               </div>
               <p className="text-sm text-gray-400 mt-4">
-                Escaneie para baixar
+                Escaneie para informação
               </p>
             </div>
 
             {/* Download Button */}
             <div>
-              <a
-                href={currentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={handleDownloadClick}
                 className="inline-flex items-center px-8 py-4 rounded-full font-bold text-lg transition hover:scale-105 bg-primary-500 hover:bg-primary-600 text-white"
               >
                 <Download className="w-6 h-6 mr-2" />
                 Baixar para {selectedPlatform === 'android' ? 'Android' : 'iOS'}
-              </a>
+              </button>
             </div>
 
             <p className="text-sm text-gray-500 mt-4">
@@ -182,30 +204,26 @@ export default function DownloadSection() {
                 App Passageiro
               </h4>
               <div className="space-y-3">
-                <a
-                  href={APP_URLS.passenger.android}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
+                <button
+                  onClick={handleDownloadClick}
+                  className="w-full flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
                 >
                   <span className="flex items-center text-white">
                     <Play className="w-5 h-5 text-primary-500 mr-2" />
                     Android (APK)
                   </span>
                   <Download className="w-5 h-5 text-gray-400" />
-                </a>
-                <a
-                  href={APP_URLS.passenger.ios}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
+                </button>
+                <button
+                  onClick={handleDownloadClick}
+                  className="w-full flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
                 >
                   <span className="flex items-center text-white">
                     <Apple className="w-5 h-5 text-gray-300 mr-2" />
                     iOS (Simulator)
                   </span>
                   <Download className="w-5 h-5 text-gray-400" />
-                </a>
+                </button>
               </div>
             </div>
 
@@ -216,30 +234,26 @@ export default function DownloadSection() {
                 App Motorista
               </h4>
               <div className="space-y-3">
-                <a
-                  href={APP_URLS.driver.android}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
+                <button
+                  onClick={handleDownloadClick}
+                  className="w-full flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
                 >
                   <span className="flex items-center text-white">
                     <Play className="w-5 h-5 text-primary-500 mr-2" />
                     Android (APK)
                   </span>
                   <Download className="w-5 h-5 text-gray-400" />
-                </a>
-                <a
-                  href={APP_URLS.driver.ios}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
+                </button>
+                <button
+                  onClick={handleDownloadClick}
+                  className="w-full flex items-center justify-between p-3 bg-gray-900 rounded-xl hover:bg-gray-700 transition border border-gray-700"
                 >
                   <span className="flex items-center text-white">
                     <Apple className="w-5 h-5 text-gray-300 mr-2" />
                     iOS (Simulator)
                   </span>
                   <Download className="w-5 h-5 text-gray-400" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
