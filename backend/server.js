@@ -752,14 +752,19 @@ ensurePaymentMethodsTable().then(() => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Closing server gracefully...');
-  server.close(() => {
+  server.close(async () => {
     console.log('Server closed');
-    pool.end(() => {
-      console.log('Database pool closed');
-      process.exit(0);
-    });
+    try {
+      if (pool && typeof pool.end === 'function') {
+        await pool.end();
+        console.log('Database pool closed');
+      }
+    } catch (error) {
+      console.error('Error closing pool:', error.message);
+    }
+    process.exit(0);
   });
 });
 
