@@ -53,7 +53,7 @@ export default function BookRideScreen({ navigation, route }) {
   const vehicleTypes = [
     { type: 'Moto', perKm: 150, icon: '🏍️' },
     { type: 'Normal', perKm: 338, icon: '🚗' },
-    { type: 'Premium', perKm: 550, icon: '🚙' },
+    { type: 'Premium', perKm: 650, icon: '🚙' },
   ];
 
   useEffect(() => {

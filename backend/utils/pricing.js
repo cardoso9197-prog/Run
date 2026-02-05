@@ -74,7 +74,7 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   const perKmRates = {
     Moto: 150,      // 150 XOF/km
     Normal: 338,    // 338 XOF/km
-    Premium: 550,   // 550 XOF/km
+    Premium: 650,   // 650 XOF/km (increased by 100 XOF)
   };
   
   const perKmRate = perKmRates[vehicleType] || perKmRates.Normal;
