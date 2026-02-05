@@ -38,9 +38,17 @@ export default function BookRideScreen({ navigation, route }) {
   useEffect(() => {
     if (route.params?.pickup) {
       setPickupLocation(route.params.pickup);
+      // Reset airport selection when pickup changes
+      setAirportDetected(false);
+      setIsAirportInside(false);
+      setShowAirportModal(false);
     }
     if (route.params?.dropoff) {
       setDropoffLocation(route.params.dropoff);
+      // Reset airport selection when dropoff changes
+      setAirportDetected(false);
+      setIsAirportInside(false);
+      setShowAirportModal(false);
     }
   }, [route.params]);
 
@@ -90,6 +98,13 @@ export default function BookRideScreen({ navigation, route }) {
       return;
     }
 
+    console.log('🔍 Calculating fare with:', {
+      pickup: `${pickupLocation.latitude}, ${pickupLocation.longitude}`,
+      dropoff: `${dropoffLocation.latitude}, ${dropoffLocation.longitude}`,
+      vehicleType,
+      isAirportInside,
+    });
+
     setFareLoading(true);
     try {
       const response = await rideAPI.estimateFare({
@@ -101,24 +116,46 @@ export default function BookRideScreen({ navigation, route }) {
         isAirportInside: isAirportInside,
       });
 
-      const data = response.data;
-      setEstimatedFare(data.estimatedFare);
-      setFareDetails({
-        baseFare: data.baseFare,
-        distanceFare: data.distanceFare,
-        distance: data.estimatedDistance,
+      const data = response.data.estimate || response.data;
+      
+      console.log('✅ Fare estimate received:', {
+        totalFare: data.totalFare,
+        airportDetected: data.airportDetected,
         isAirportTrip: data.isAirportTrip,
         isAirportFlatRate: data.isAirportFlatRate,
         perKmRate: data.perKmRate,
       });
       
-      // Show airport modal if airport detected and not yet chosen
-      if (data.airportDetected && !airportDetected) {
-        setAirportDetected(true);
-        setShowAirportModal(true);
+      setEstimatedFare(data.totalFare);
+      setFareDetails({
+        baseFare: data.baseFare,
+        distanceFare: data.distanceFare,
+        totalFare: data.totalFare,
+        distance: data.distance,
+        perKmRate: data.perKmRate,
+        isAirportTrip: data.isAirportTrip || false,
+        isAirportFlatRate: data.isAirportFlatRate || false,
+      });
+      
+      // Check if airport was detected and show modal if needed
+      if (data.airportDetected) {
+        console.log('✈️ Airport detected! airportDetected state:', airportDetected);
+        // Always update airport detection state
+        if (!airportDetected) {
+          setAirportDetected(true);
+          // Show modal immediately for first detection
+          setShowAirportModal(true);
+        }
+      } else {
+        // Reset airport state if not at airport anymore
+        if (airportDetected) {
+          console.log('❌ Not at airport anymore, resetting');
+          setAirportDetected(false);
+          setIsAirportInside(false);
+        }
       }
     } catch (error) {
-      console.error('Error calculating fare:', error);
+      console.error('❌ Fare calculation error:', error);
       setEstimatedFare(null);
       setFareDetails(null);
       Alert.alert('Error', 'Failed to calculate fare. Please try again.');
@@ -426,20 +463,30 @@ export default function BookRideScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.airportInsideButton}
             onPress={() => {
+              console.log('✈️ User selected: Inside Terminal');
               setIsAirportInside(true);
               setShowAirportModal(false);
-              calculateFare();
+              // Force immediate recalculation with inside terminal rate
+              setTimeout(() => {
+                console.log('🔄 Recalculating fare for inside terminal...');
+                calculateFare();
+              }, 100);
             }}
           >
             <Text style={styles.modalButtonText}>🏢 Inside Terminal</Text>
-            <Text style={styles.modalButtonSubtext}>5600 XOF flat rate</Text>
+            <Text style={styles.modalButtonSubtext}>5,600 XOF flat rate</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.airportOutsideButton}
             onPress={() => {
+              console.log('🅿️ User selected: Outside/Parking');
               setIsAirportInside(false);
               setShowAirportModal(false);
-              calculateFare();
+              // Force immediate recalculation with per-km rate
+              setTimeout(() => {
+                console.log('🔄 Recalculating fare for outside parking...');
+                calculateFare();
+              }, 100);
             }}
           >
             <Text style={styles.modalButtonText}>🅿️ Outside/Parking</Text>
