@@ -38,92 +38,87 @@ function toRadians(degrees) {
 }
 
 /**
- * Calculate fare for a ride with red zone detection
+ * Calculate fare for a ride with airport special pricing
  * @param {number} distanceKm - Distance in kilometers
  * @param {number} durationMinutes - Duration in minutes
- * @param {string} vehicleType - Type of vehicle (RunRun, Moto, Comfort, XL)
+ * @param {string} vehicleType - Type of vehicle (Moto, Normal, Premium)
  * @param {number} surgeMultiplier - Surge pricing multiplier (default 1.0)
  * @param {number} pickupLat - Pickup latitude
  * @param {number} pickupLon - Pickup longitude
  * @param {number} dropoffLat - Dropoff latitude
  * @param {number} dropoffLon - Dropoff longitude
+ * @param {boolean} isAirportInside - Whether pickup/dropoff is inside airport terminal
  * @returns {object} Fare breakdown with components and total
  */
-async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier = 1.0, pickupLat = null, pickupLon = null, dropoffLat = null, dropoffLon = null) {
-  // Base pricing from environment variables or defaults
-  const baseFare = parseFloat(process.env.BASE_FARE) || 500;
-  const perKmRate = parseFloat(process.env.PER_KM_RATE) || 200;
-  const perMinuteRate = parseFloat(process.env.PER_MINUTE_RATE) || 50;
-  const minimumFare = parseFloat(process.env.MINIMUM_FARE) || 1000;
-  const bookingFee = parseFloat(process.env.BOOKING_FEE) || 200;
-
-  // Vehicle type multipliers
-  const multipliers = {
-    RunRun: parseFloat(process.env.RUNRUN_MULTIPLIER) || 1.0,
-    Normal: parseFloat(process.env.RUNRUN_MULTIPLIER) || 1.0,
-    Moto: parseFloat(process.env.MOTO_MULTIPLIER) || 0.7,
-    Comfort: parseFloat(process.env.COMFORT_MULTIPLIER) || 1.3,
-    Premium: parseFloat(process.env.COMFORT_MULTIPLIER) || 1.3,
-    XL: parseFloat(process.env.XL_MULTIPLIER) || 1.5,
-  };
-
-  const vehicleMultiplier = multipliers[vehicleType] || 1.0;
-
-  // Calculate fare components
-  const distanceFare = distanceKm * perKmRate * vehicleMultiplier;
-  const durationFare = durationMinutes * perMinuteRate * vehicleMultiplier;
-  const adjustedBaseFare = (baseFare + bookingFee) * vehicleMultiplier;
-
-  // Calculate subtotal
-  let subtotal = adjustedBaseFare + distanceFare + durationFare;
-
-  // Check for red zones (bad road conditions) and apply 30% surcharge
-  let redZoneSurcharge = 0;
-  let isRedZone = false;
-  let redZoneInfo = null;
-  let redZoneLocations = [];
-
+async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMultiplier = 1.0, pickupLat = null, pickupLon = null, dropoffLat = null, dropoffLon = null, isAirportInside = false) {
+  // Airport Osvaldo Vieira coordinates (approximate terminal location)
+  const AIRPORT_LAT = 11.8948;
+  const AIRPORT_LON = -15.6537;
+  const AIRPORT_RADIUS = 1.0; // 1km radius to detect airport area
+  
+  // Check if either pickup or dropoff is at the airport
+  let isAirportTrip = false;
+  let airportDetected = false;
+  
   if (pickupLat && pickupLon && dropoffLat && dropoffLon) {
-    const redZones = require('./redZones');
-    const redZoneResult = redZones.calculateRedZoneSurge(pickupLat, pickupLon, dropoffLat, dropoffLon);
+    const pickupToAirport = calculateDistance(pickupLat, pickupLon, AIRPORT_LAT, AIRPORT_LON);
+    const dropoffToAirport = calculateDistance(dropoffLat, dropoffLon, AIRPORT_LAT, AIRPORT_LON);
     
-    if (redZoneResult.isRedZone) {
-      isRedZone = true;
-      redZoneInfo = redZoneResult;
-      // Apply 30% surcharge for bad road conditions
-      redZoneSurcharge = subtotal * 0.30;
-      subtotal += redZoneSurcharge;
-      
-      // Determine which locations are in red zones
-      const pickupRedZone = redZones.isInRedZone(pickupLat, pickupLon);
-      const dropoffRedZone = redZones.isInRedZone(dropoffLat, dropoffLon);
-      
-      if (pickupRedZone) redZoneLocations.push(pickupRedZone.name);
-      if (dropoffRedZone) redZoneLocations.push(dropoffRedZone.name);
+    if (pickupToAirport <= AIRPORT_RADIUS || dropoffToAirport <= AIRPORT_RADIUS) {
+      airportDetected = true;
+      isAirportTrip = isAirportInside === true;
     }
   }
+  
+  // NEW PRICING: Per km rates for each vehicle type
+  const perKmRates = {
+    Moto: 150,      // 150 XOF/km
+    Normal: 338,    // 338 XOF/km
+    Premium: 550,   // 550 XOF/km
+  };
+  
+  const perKmRate = perKmRates[vehicleType] || perKmRates.Normal;
+  
+  // Airport inside terminal flat rate (to/from any zone in Bissau)
+  const AIRPORT_FLAT_RATE = 5600; // 5600 XOF fixed price
+  
+  let totalFare = 0;
+  let baseFare = 0;
+  let distanceFare = 0;
+  let isAirportFlatRate = false;
+  
+  // If airport trip with inside terminal selected, use flat rate
+  if (isAirportTrip) {
+    totalFare = AIRPORT_FLAT_RATE;
+    baseFare = AIRPORT_FLAT_RATE;
+    distanceFare = 0;
+    isAirportFlatRate = true;
+  } else {
+    // Normal pricing: distance * per km rate
+    baseFare = 0;
+    distanceFare = distanceKm * perKmRate;
+    totalFare = distanceFare;
+  }
 
-  // Apply surge pricing
-  const surgeFare = surgeMultiplier > 1.0 ? (subtotal * (surgeMultiplier - 1.0)) : 0;
-  let totalFare = subtotal + surgeFare;
-
-  // Ensure minimum fare
-  totalFare = Math.max(totalFare, minimumFare);
+  
+  // Apply surge pricing (only to non-airport trips)
+  const surgeFare = surgeMultiplier > 1.0 && !isAirportFlatRate ? (totalFare * (surgeMultiplier - 1.0)) : 0;
+  totalFare += surgeFare;
 
   // Round to nearest 50 XOF
   totalFare = Math.round(totalFare / 50) * 50;
 
   return {
-    baseFare: Math.round(adjustedBaseFare),
+    baseFare: Math.round(baseFare),
     distanceFare: Math.round(distanceFare),
-    durationFare: Math.round(durationFare),
-    redZoneSurcharge: Math.round(redZoneSurcharge),
+    durationFare: 0, // No longer using duration-based pricing
     surgeFare: Math.round(surgeFare),
     totalFare: Math.round(totalFare),
     surgeMultiplier,
-    isRedZone,
-    redZoneInfo,
-    redZoneLocations,
+    isAirportTrip,
+    isAirportFlatRate,
+    airportDetected,
+    perKmRate,
   };
 }
 

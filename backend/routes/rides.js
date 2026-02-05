@@ -60,7 +60,10 @@ router.post('/estimate-fare', async (req, res) => {
     // Estimate duration (assume 30 km/h average speed in city)
     const estimatedDuration = Math.ceil((totalDistance / 30) * 60); // minutes
 
-    // Calculate fare with red zone detection
+    // Get airport inside/outside parameter
+    const isAirportInside = req.body.isAirportInside === true;
+
+    // Calculate fare with airport detection
     const fareDetails = await calculateFare(
       totalDistance, 
       estimatedDuration, 
@@ -69,7 +72,8 @@ router.post('/estimate-fare', async (req, res) => {
       pickupLatitude,
       pickupLongitude,
       dropoffLatitude,
-      dropoffLongitude
+      dropoffLongitude,
+      isAirportInside
     );
 
     res.json({
@@ -80,13 +84,13 @@ router.post('/estimate-fare', async (req, res) => {
         baseFare: fareDetails.baseFare,
         distanceFare: fareDetails.distanceFare,
         durationFare: fareDetails.durationFare,
-        redZoneSurcharge: fareDetails.redZoneSurcharge || 0,
         surgeFare: fareDetails.surgeFare,
         totalFare: fareDetails.totalFare,
         surgeMultiplier: fareDetails.surgeMultiplier,
-        isRedZone: fareDetails.isRedZone || false,
-        redZoneInfo: fareDetails.redZoneInfo || null,
-        redZoneLocations: fareDetails.redZoneLocations || [],
+        isAirportTrip: fareDetails.isAirportTrip || false,
+        isAirportFlatRate: fareDetails.isAirportFlatRate || false,
+        airportDetected: fareDetails.airportDetected || false,
+        perKmRate: fareDetails.perKmRate,
       },
     });
   } catch (error) {
