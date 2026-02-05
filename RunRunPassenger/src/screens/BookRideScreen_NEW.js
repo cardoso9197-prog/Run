@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI } from '../services/api';
-import redZones from '../../utils/redZones';
 
 export default function BookRideScreen({ navigation, route }) {
   console.log('BookRideScreen rendering');
@@ -29,10 +28,11 @@ export default function BookRideScreen({ navigation, route }) {
   const [fareLoading, setFareLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [pickupRedZone, setPickupRedZone] = useState(null);
+  const [airportDetected, setAirportDetected] = useState(false);
+  const [isAirportInside, setIsAirportInside] = useState(false);
+  const [showAirportModal, setShowAirportModal] = useState(false);
   const [error, setError] = useState(null);
   const [currentRideId, setCurrentRideId] = useState(null);
-  const [showRedZoneWarning, setShowRedZoneWarning] = useState(false);
 
   // Handle location selected from map
   useEffect(() => {
@@ -45,25 +45,15 @@ export default function BookRideScreen({ navigation, route }) {
   }, [route.params]);
 
   const vehicleTypes = [
-    { type: 'Moto', baseFare: 500, perKm: 100, icon: '🏍️' },
-    { type: 'Normal', baseFare: 1000, perKm: 150, icon: '🚗' },
-    { type: 'Premium', baseFare: 3000, perKm: 450, icon: '🚙' },
+    { type: 'Moto', perKm: 150, icon: '🏍️' },
+    { type: 'Normal', perKm: 338, icon: '🚗' },
+    { type: 'Premium', perKm: 550, icon: '🚙' },
   ];
 
   useEffect(() => {
     console.log('BookRideScreen mounted, loading payment methods...');
     loadPaymentMethods();
   }, []);
-
-  // Check pickup location for red zones immediately when selected
-  useEffect(() => {
-    if (pickupLocation) {
-      const redZone = redZones.isInRedZone(pickupLocation.latitude, pickupLocation.longitude);
-      setPickupRedZone(redZone);
-    } else {
-      setPickupRedZone(null);
-    }
-  }, [pickupLocation]);
 
   // Calculate fare when all required fields are filled
   useEffect(() => {
@@ -108,6 +98,7 @@ export default function BookRideScreen({ navigation, route }) {
         dropoffLatitude: dropoffLocation.latitude,
         dropoffLongitude: dropoffLocation.longitude,
         vehicleType: vehicleType,
+        isAirportInside: isAirportInside,
       });
 
       const data = response.data;
@@ -115,15 +106,16 @@ export default function BookRideScreen({ navigation, route }) {
       setFareDetails({
         baseFare: data.baseFare,
         distanceFare: data.distanceFare,
-        redZoneSurcharge: data.redZoneSurcharge,
-        isRedZone: data.isRedZone,
-        redZoneLocations: data.redZoneLocations,
         distance: data.estimatedDistance,
+        isAirportTrip: data.isAirportTrip,
+        isAirportFlatRate: data.isAirportFlatRate,
+        perKmRate: data.perKmRate,
       });
-
-      // Show red zone warning if applicable
-      if (data.isRedZone && data.redZoneLocations.length > 0) {
-        setShowRedZoneWarning(true);
+      
+      // Show airport modal if airport detected and not yet chosen
+      if (data.airportDetected && !airportDetected) {
+        setAirportDetected(true);
+        setShowAirportModal(true);
       }
     } catch (error) {
       console.error('Error calculating fare:', error);
@@ -151,41 +143,7 @@ export default function BookRideScreen({ navigation, route }) {
       return;
     }
 
-    // Show red zone confirmation if in bad road area
-    if (fareDetails?.isRedZone || pickupRedZone) {
-      Alert.alert(
-        '⚠️ Red Zone Alert',
-        getRedZoneMessage(),
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Confirm Booking', onPress: proceedWithBooking },
-        ]
-      );
-    } else {
-      proceedWithBooking();
-    }
-  };
-
-  const getRedZoneMessage = () => {
-    // Check if we have fare details with red zone locations
-    if (fareDetails?.redZoneLocations && fareDetails.redZoneLocations.length > 0) {
-      const locations = fareDetails.redZoneLocations.map(loc => {
-        if (loc === 'pickup') return 'Pickup location';
-        if (loc === 'dropoff') return 'Drop-off location';
-        // If it's a zone name, display it as-is
-        return loc;
-      });
-
-      return `${locations.join(' and ')} ${locations.length > 1 ? 'have' : 'has'} bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge (${fareDetails.redZoneSurcharge} XOF) has been applied to your fare.\n\nTotal: ${estimatedFare} XOF\n\nDo you want to proceed?`;
-    }
-    
-    // Check if pickup location is in red zone
-    if (pickupRedZone) {
-      return `${pickupRedZone.name} has ${pickupRedZone.roadCondition} roads.\n\nThis pickup location is in a red zone area with bad road conditions.\n\nA 30% surcharge will be applied to your fare.\n\nDo you want to proceed with this booking?`;
-    }
-    
-    // Fallback message
-    return 'This area has bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge has been applied to your fare.\n\nDo you want to proceed?';
+    proceedWithBooking();
   };
 
   const proceedWithBooking = async () => {
@@ -298,14 +256,6 @@ export default function BookRideScreen({ navigation, route }) {
           />
         )}
 
-        {pickupRedZone && (
-          <View style={styles.pickupRedZoneWarning}>
-            <Text style={styles.pickupRedZoneText}>
-              ⚠️ Pickup in Red Zone: {pickupRedZone.name} ({pickupRedZone.roadCondition} roads)
-            </Text>
-          </View>
-        )}
-
         <Text style={styles.sectionTitle}>🎯 Dropoff Location</Text>
         <TouchableOpacity
           style={styles.locationButton}
@@ -340,7 +290,7 @@ export default function BookRideScreen({ navigation, route }) {
               <Text style={styles.vehicleIcon}>{vehicle.icon}</Text>
               <Text style={styles.vehicleText}>{t(vehicle.type.toLowerCase())}</Text>
               <Text style={styles.vehiclePrice}>
-                {vehicle.baseFare} {t('xof')}
+                {vehicle.perKm} {t('xof')}/km
               </Text>
             </TouchableOpacity>
           ))}
@@ -354,39 +304,36 @@ export default function BookRideScreen({ navigation, route }) {
               <ActivityIndicator size="small" color="#FF6B00" />
             ) : estimatedFare ? (
               <View style={styles.fareContainer}>
-                {(fareDetails?.isRedZone || pickupRedZone) && (
-                  <View style={styles.redZoneBanner}>
-                    <Text style={styles.redZoneBannerText}>⚠️ RED ZONE - Bad Road Conditions</Text>
-                    <Text style={styles.redZoneBannerSubtext}>
-                      {fareDetails?.redZoneLocations ? 
-                        fareDetails.redZoneLocations.map(loc => 
-                          loc === 'pickup' ? 'Pickup' : loc === 'dropoff' ? 'Drop-off' : loc
-                        ).join(' & ') + ' - potholes/unpaved roads' :
-                        pickupRedZone ? `${pickupRedZone.name} (${pickupRedZone.roadCondition} roads)` :
-                        'potholes/unpaved roads'
-                      }
+                {fareDetails?.isAirportFlatRate && (
+                  <View style={styles.airportBanner}>
+                    <Text style={styles.airportBannerText}>✈️ AIRPORT FLAT RATE</Text>
+                    <Text style={styles.airportBannerSubtext}>
+                      Inside Terminal Special - Fixed Price
                     </Text>
                   </View>
                 )}
-                <View style={styles.fareRow}>
-                  <Text style={styles.fareLabel}>Base Fare:</Text>
-                  <Text style={styles.fareValue}>{fareDetails?.baseFare || 0} XOF</Text>
-                </View>
-                <View style={styles.fareRow}>
-                  <Text style={styles.fareLabel}>Distance ({fareDetails?.distance?.toFixed(1) || 0} km):</Text>
-                  <Text style={styles.fareValue}>{fareDetails?.distanceFare || 0} XOF</Text>
-                </View>
-                {fareDetails?.isRedZone && fareDetails.redZoneSurcharge > 0 && (
+                {fareDetails?.isAirportFlatRate ? (
                   <View style={styles.fareRow}>
-                    <Text style={[styles.fareLabel, styles.redZoneText]}>Red Zone Surcharge (30%):</Text>
-                    <Text style={[styles.fareValue, styles.redZoneText]}>+{fareDetails.redZoneSurcharge} XOF</Text>
+                    <Text style={styles.fareLabelTotal}>Airport Flat Rate:</Text>
+                    <Text style={styles.fareValueTotal}>{estimatedFare} XOF</Text>
                   </View>
+                ) : (
+                  <>
+                    <View style={styles.fareRow}>
+                      <Text style={styles.fareLabel}>Distance:</Text>
+                      <Text style={styles.fareValue}>{fareDetails?.distance?.toFixed(1) || 0} km</Text>
+                    </View>
+                    <View style={styles.fareRow}>
+                      <Text style={styles.fareLabel}>Rate:</Text>
+                      <Text style={styles.fareValue}>{fareDetails?.perKmRate || 0} XOF/km</Text>
+                    </View>
+                    <View style={styles.fareDivider} />
+                    <View style={styles.fareRow}>
+                      <Text style={styles.fareLabelTotal}>Estimated Total:</Text>
+                      <Text style={styles.fareValueTotal}>{estimatedFare} XOF</Text>
+                    </View>
+                  </>
                 )}
-                <View style={styles.fareDivider} />
-                <View style={styles.fareRow}>
-                  <Text style={styles.fareLabelTotal}>Estimated Total:</Text>
-                  <Text style={styles.fareValueTotal}>{estimatedFare} XOF</Text>
-                </View>
               </View>
             ) : (
               <Text style={styles.fareError}>Unable to calculate fare</Text>
@@ -463,24 +410,40 @@ export default function BookRideScreen({ navigation, route }) {
       </View>
     </ScrollView>
 
-    {/* Red Zone Warning Modal */}
+    {/* Airport Modal */}
     <Modal
-      visible={showRedZoneWarning}
+      visible={showAirportModal}
       transparent
       animationType="slide"
-      onRequestClose={() => setShowRedZoneWarning(false)}
+      onRequestClose={() => setShowAirportModal(false)}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>⚠️ Red Zone Alert</Text>
+          <Text style={styles.modalTitle}>✈️ Airport Pickup Detected</Text>
           <Text style={styles.modalMessage}>
-            {getRedZoneMessage()}
+            Are you picking up from inside the airport terminal or outside in the parking area?
           </Text>
           <TouchableOpacity
-            style={styles.modalButton}
-            onPress={() => setShowRedZoneWarning(false)}
+            style={styles.airportInsideButton}
+            onPress={() => {
+              setIsAirportInside(true);
+              setShowAirportModal(false);
+              calculateFare();
+            }}
           >
-            <Text style={styles.modalButtonText}>I Understand</Text>
+            <Text style={styles.modalButtonText}>🏢 Inside Terminal</Text>
+            <Text style={styles.modalButtonSubtext}>5600 XOF flat rate</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.airportOutsideButton}
+            onPress={() => {
+              setIsAirportInside(false);
+              setShowAirportModal(false);
+              calculateFare();
+            }}
+          >
+            <Text style={styles.modalButtonText}>🅿️ Outside/Parking</Text>
+            <Text style={styles.modalButtonSubtext}>Regular per-km rate</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -628,22 +591,40 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   redZoneBanner: {
-    backgroundColor: '#ffebee',
+    backgroundColor: '#e3f2fd',
     padding: 10,
     borderRadius: 8,
     marginBottom: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#d32f2f',
+    borderLeftColor: '#1976d2',
   },
   redZoneBannerText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#c62828',
+    color: '#1565c0',
     marginBottom: 4,
   },
   redZoneBannerSubtext: {
     fontSize: 12,
-    color: '#c62828',
+    color: '#1565c0',
+  },
+  airportBanner: {
+    backgroundColor: '#e3f2fd',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#1976d2',
+  },
+  airportBannerText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1565c0',
+    marginBottom: 4,
+  },
+  airportBannerSubtext: {
+    fontSize: 12,
+    color: '#1565c0',
   },
   fareRow: {
     flexDirection: 'row',
@@ -825,19 +806,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  pickupRedZoneWarning: {
-    backgroundColor: '#fff3cd',
-    borderWidth: 1,
-    borderColor: '#ffc107',
+  airportInsideButton: {
+    backgroundColor: '#1976d2',
+    padding: 15,
     borderRadius: 8,
-    padding: 12,
     marginTop: 10,
-    marginBottom: 15,
+    alignItems: 'center',
   },
-  pickupRedZoneText: {
-    color: '#856404',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+  airportOutsideButton: {
+    backgroundColor: '#FF6B00',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  modalButtonSubtext: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 4,
   },
 });
