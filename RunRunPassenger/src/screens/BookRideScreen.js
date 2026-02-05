@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { rideAPI, passengerAPI, verifyToken } from '../services/api';
+import redZones from '../../utils/redZones';
 
 export default function BookRideScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -27,6 +28,7 @@ export default function BookRideScreen({ navigation, route }) {
   const [bookingError, setBookingError] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pickupRedZone, setPickupRedZone] = useState(null);
   const [currentRideId, setCurrentRideId] = useState(null);
   const [showRedZoneWarning, setShowRedZoneWarning] = useState(false);
 
@@ -57,6 +59,16 @@ export default function BookRideScreen({ navigation, route }) {
     
     return unsubscribe;
   }, [navigation]);
+
+  // Check pickup location for red zones immediately when selected
+  useEffect(() => {
+    if (pickupLocation) {
+      const redZone = redZones.isInRedZone(pickupLocation.latitude, pickupLocation.longitude);
+      setPickupRedZone(redZone);
+    } else {
+      setPickupRedZone(null);
+    }
+  }, [pickupLocation]);
 
   // Calculate fare when all required fields are filled
   useEffect(() => {
@@ -186,7 +198,7 @@ export default function BookRideScreen({ navigation, route }) {
     }
 
     // Show red zone confirmation if in bad road area
-    if (fareDetails?.isRedZone) {
+    if (fareDetails?.isRedZone || pickupRedZone) {
       Alert.alert(
         '⚠️ Red Zone Alert',
         getRedZoneMessage(),
@@ -201,14 +213,21 @@ export default function BookRideScreen({ navigation, route }) {
   };
 
   const getRedZoneMessage = () => {
-    if (!fareDetails || !fareDetails.redZoneInfo) {
-      return 'This area has bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge has been applied to your fare.\n\nDo you want to proceed?';
+    // Check if we have fare details with red zone info
+    if (fareDetails?.redZoneInfo) {
+      const zoneName = fareDetails.redZoneInfo.redZoneName || 'This area';
+      const roadCondition = fareDetails.redZoneInfo.roadCondition || 'poor road conditions';
+      
+      return `${zoneName} has ${roadCondition} roads.\n\nAn additional 30% surcharge (${fareDetails.redZoneSurcharge} XOF) has been applied to compensate the driver.\n\nTotal fare: ${estimatedFare} XOF\n\nDo you want to proceed with this booking?`;
     }
     
-    const zoneName = fareDetails.redZoneInfo.redZoneName || 'This area';
-    const roadCondition = fareDetails.redZoneInfo.roadCondition || 'poor road conditions';
+    // Check if pickup location is in red zone
+    if (pickupRedZone) {
+      return `${pickupRedZone.name} has ${pickupRedZone.roadCondition} roads.\n\nThis pickup location is in a red zone area with bad road conditions.\n\nA 30% surcharge will be applied to your fare.\n\nDo you want to proceed with this booking?`;
+    }
     
-    return `${zoneName} has ${roadCondition} roads.\n\nAn additional 30% surcharge (${fareDetails.redZoneSurcharge} XOF) has been applied to compensate the driver.\n\nTotal fare: ${estimatedFare} XOF\n\nDo you want to proceed with this booking?`;
+    // Fallback message
+    return 'This area has bad road conditions (potholes, unpaved roads).\n\nAn additional 30% surcharge has been applied to your fare.\n\nDo you want to proceed?';
   };
 
   const proceedWithBooking = async () => {
@@ -340,6 +359,14 @@ export default function BookRideScreen({ navigation, route }) {
           />
         )}
 
+        {pickupRedZone && (
+          <View style={styles.pickupRedZoneWarning}>
+            <Text style={styles.pickupRedZoneText}>
+              ⚠️ Pickup in Red Zone: {pickupRedZone.name} ({pickupRedZone.roadCondition} roads)
+            </Text>
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>🎯 Dropoff Location</Text>
         <TouchableOpacity
           style={styles.locationButton}
@@ -388,11 +415,11 @@ export default function BookRideScreen({ navigation, route }) {
               <ActivityIndicator size="small" color="#FF6B00" />
             ) : estimatedFare ? (
               <View style={styles.fareContainer}>
-                {fareDetails?.isRedZone && (
+                {(fareDetails?.isRedZone || pickupRedZone) && (
                   <View style={styles.redZoneBanner}>
                     <Text style={styles.redZoneBannerText}>⚠️ RED ZONE - Bad Road Conditions</Text>
                     <Text style={styles.redZoneBannerSubtext}>
-                      {fareDetails.redZoneInfo?.redZoneName || 'This area'} has {fareDetails.redZoneInfo?.roadCondition || 'poor'} roads
+                      {fareDetails?.redZoneInfo?.redZoneName || pickupRedZone?.name || 'This area'} has {fareDetails?.redZoneInfo?.roadCondition || pickupRedZone?.roadCondition || 'poor'} roads
                     </Text>
                   </View>
                 )}
@@ -864,5 +891,20 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontSize: 16,
     fontWeight: '600',
+  },
+  pickupRedZoneWarning: {
+    backgroundColor: '#fff3cd',
+    borderWidth: 1,
+    borderColor: '#ffc107',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  pickupRedZoneText: {
+    color: '#856404',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

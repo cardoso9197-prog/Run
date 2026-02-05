@@ -92,6 +92,14 @@ const RED_ZONES = [
     surgeMultiplier: 1.3,
     roadCondition: 'unpaved',
   },
+  {
+    name: 'Cuntum Madina',
+    latitude: 11.8650,
+    longitude: -15.5978,
+    radius: 1.5,
+    surgeMultiplier: 1.3,
+    roadCondition: 'poor',
+  },
 
   // ==================== CACHEU REGION ====================
   // Northern region - mostly rural with unpaved roads
@@ -393,6 +401,9 @@ function toRadians(degrees) {
  * @returns {object|null} Red zone object or null
  */
 function isInRedZone(latitude, longitude) {
+  let closestZone = null;
+  let closestDistance = Infinity;
+
   for (const zone of RED_ZONES) {
     const distance = calculateDistance(
       latitude,
@@ -401,11 +412,14 @@ function isInRedZone(latitude, longitude) {
       zone.longitude
     );
 
-    if (distance <= zone.radius) {
-      return zone;
+    // Check if location is within zone radius AND it's closer than previous closest
+    if (distance <= zone.radius && distance < closestDistance) {
+      closestZone = zone;
+      closestDistance = distance;
     }
   }
-  return null;
+
+  return closestZone;
 }
 
 /**

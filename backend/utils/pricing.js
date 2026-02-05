@@ -81,6 +81,7 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   let redZoneSurcharge = 0;
   let isRedZone = false;
   let redZoneInfo = null;
+  let redZoneLocations = [];
 
   if (pickupLat && pickupLon && dropoffLat && dropoffLon) {
     const redZones = require('./redZones');
@@ -92,6 +93,13 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
       // Apply 30% surcharge for bad road conditions
       redZoneSurcharge = subtotal * 0.30;
       subtotal += redZoneSurcharge;
+      
+      // Determine which locations are in red zones
+      const pickupRedZone = redZones.isInRedZone(pickupLat, pickupLon);
+      const dropoffRedZone = redZones.isInRedZone(dropoffLat, dropoffLon);
+      
+      if (pickupRedZone) redZoneLocations.push(pickupRedZone.name);
+      if (dropoffRedZone) redZoneLocations.push(dropoffRedZone.name);
     }
   }
 
@@ -115,6 +123,7 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     surgeMultiplier,
     isRedZone,
     redZoneInfo,
+    redZoneLocations,
   };
 }
 

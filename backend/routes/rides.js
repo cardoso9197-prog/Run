@@ -86,6 +86,7 @@ router.post('/estimate-fare', async (req, res) => {
         surgeMultiplier: fareDetails.surgeMultiplier,
         isRedZone: fareDetails.isRedZone || false,
         redZoneInfo: fareDetails.redZoneInfo || null,
+        redZoneLocations: fareDetails.redZoneLocations || [],
       },
     });
   } catch (error) {
