@@ -63,12 +63,33 @@ router.post('/estimate-fare', async (req, res) => {
     // Get airport inside/outside parameter
     const isAirportInside = req.body.isAirportInside === true;
 
+    // Calculate surge multiplier based on driver availability
+    // Query available drivers and pending rides for surge calculation
+    let surgeMultiplier = 1.0;
+    try {
+      const availableDriversResult = await query('SELECT COUNT(*) as count FROM drivers WHERE status = $1', ['available']);
+      const pendingRidesResult = await query('SELECT COUNT(*) as count FROM rides WHERE status = $1', ['pending']);
+      
+      const availableDrivers = parseInt(availableDriversResult.rows[0].count) || 0;
+      const pendingRides = parseInt(pendingRidesResult.rows[0].count) || 0;
+      
+      // Import calculateSurgeMultiplier
+      const { calculateSurgeMultiplier } = require('../utils/pricing');
+      surgeMultiplier = calculateSurgeMultiplier(availableDrivers, pendingRides);
+      
+      console.log(`Surge calculation: ${availableDrivers} available drivers, ${pendingRides} pending rides → multiplier: ${surgeMultiplier}`);
+    } catch (error) {
+      console.error('Error calculating surge:', error);
+      // Default to no surge if calculation fails
+      surgeMultiplier = 1.0;
+    }
+
     // Calculate fare with airport detection
     const fareDetails = await calculateFare(
       totalDistance, 
       estimatedDuration, 
       vehicleType || 'Normal',
-      1.0, // surge multiplier
+      surgeMultiplier, // Use calculated surge multiplier
       pickupLatitude,
       pickupLongitude,
       dropoffLatitude,
