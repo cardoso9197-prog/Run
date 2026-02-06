@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ export default function BookRideScreen({ navigation, route }) {
   const [airportDetected, setAirportDetected] = useState(false);
   const [isAirportInside, setIsAirportInside] = useState(false);
   const [showAirportModal, setShowAirportModal] = useState(false);
+  const airportChoiceMade = useRef(false);
   const [error, setError] = useState(null);
   const [currentRideId, setCurrentRideId] = useState(null);
 
@@ -42,6 +43,7 @@ export default function BookRideScreen({ navigation, route }) {
       setAirportDetected(false);
       setIsAirportInside(false);
       setShowAirportModal(false);
+      airportChoiceMade.current = false;
     }
     if (route.params?.dropoff) {
       setDropoffLocation(route.params.dropoff);
@@ -49,6 +51,7 @@ export default function BookRideScreen({ navigation, route }) {
       setAirportDetected(false);
       setIsAirportInside(false);
       setShowAirportModal(false);
+      airportChoiceMade.current = false;
     }
   }, [route.params]);
 
@@ -139,26 +142,21 @@ export default function BookRideScreen({ navigation, route }) {
       
       // Check if airport was detected and show modal if needed
       if (data.airportDetected) {
-        console.log('✈️ Airport detected! Current state - airportDetected:', airportDetected, 'showAirportModal:', showAirportModal, 'isAirportInside:', isAirportInside);
+        console.log('✈️ Airport detected! airportChoiceMade:', airportChoiceMade.current);
+        setAirportDetected(true);
         
-        // If this is the first time detecting airport (or user hasn't made a choice yet)
-        if (!airportDetected || (airportDetected && isAirportInside === false && !data.isAirportFlatRate)) {
-          setAirportDetected(true);
-          // Show modal to let user choose inside/outside
-          console.log('🔔 Showing airport modal for user to choose location');
+        // Only show modal if user hasn't made a choice yet
+        if (!airportChoiceMade.current) {
+          console.log('🔔 First airport detection - showing modal');
           setShowAirportModal(true);
-        } else {
-          // Airport already detected and user has made a choice
-          setAirportDetected(true);
         }
       } else {
-        // Reset airport state if not at airport anymore
-        if (airportDetected) {
-          console.log('❌ Not at airport anymore, resetting');
-          setAirportDetected(false);
-          setIsAirportInside(false);
-          setShowAirportModal(false);
-        }
+        // Not at airport - reset everything
+        console.log('❌ Not at airport, resetting');
+        setAirportDetected(false);
+        setIsAirportInside(false);
+        setShowAirportModal(false);
+        airportChoiceMade.current = false;
       }
     } catch (error) {
       console.error('❌ Fare calculation error:', error);
@@ -454,13 +452,9 @@ export default function BookRideScreen({ navigation, route }) {
             style={styles.airportInsideButton}
             onPress={() => {
               console.log('✈️ User selected: Inside Terminal');
+              airportChoiceMade.current = true;
               setIsAirportInside(true);
               setShowAirportModal(false);
-              // Force immediate recalculation with inside terminal rate
-              setTimeout(() => {
-                console.log('🔄 Recalculating fare for inside terminal...');
-                calculateFare();
-              }, 100);
             }}
           >
             <Text style={styles.modalButtonText}>🏢 Inside Terminal</Text>
@@ -470,13 +464,9 @@ export default function BookRideScreen({ navigation, route }) {
             style={styles.airportOutsideButton}
             onPress={() => {
               console.log('🅿️ User selected: Outside/Parking');
+              airportChoiceMade.current = true;
               setIsAirportInside(false);
               setShowAirportModal(false);
-              // Force immediate recalculation with per-km rate
-              setTimeout(() => {
-                console.log('🔄 Recalculating fare for outside parking...');
-                calculateFare();
-              }, 100);
             }}
           >
             <Text style={styles.modalButtonText}>🅿️ Outside/Parking</Text>

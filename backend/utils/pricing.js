@@ -101,9 +101,8 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   }
 
   
-  // Apply surge pricing (only to non-airport trips)
-  const surgeFare = surgeMultiplier > 1.0 && !isAirportFlatRate ? (totalFare * (surgeMultiplier - 1.0)) : 0;
-  totalFare += surgeFare;
+  // No surge pricing - keep fares simple and predictable
+  const surgeFare = 0;
 
   // Round to nearest 50 XOF
   totalFare = Math.round(totalFare / 50) * 50;
