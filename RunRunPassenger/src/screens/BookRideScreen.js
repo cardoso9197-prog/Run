@@ -182,12 +182,17 @@ export default function BookRideScreen({ navigation, route }) {
 
       // Check if airport was detected and show modal if needed
       if (estimate.airportDetected) {
-        console.log('✈️ Airport detected! airportDetected state:', airportDetected);
-        // Always update airport detection state
-        if (!airportDetected) {
+        console.log('✈️ Airport detected! Current state - airportDetected:', airportDetected, 'showAirportModal:', showAirportModal, 'isAirportInside:', isAirportInside);
+        
+        // If this is the first time detecting airport (or user hasn't made a choice yet)
+        if (!airportDetected || (airportDetected && isAirportInside === false && !estimate.isAirportFlatRate)) {
           setAirportDetected(true);
-          // Show modal immediately for first detection
+          // Show modal to let user choose inside/outside
+          console.log('🔔 Showing airport modal for user to choose location');
           setShowAirportModal(true);
+        } else {
+          // Airport already detected and user has made a choice
+          setAirportDetected(true);
         }
       } else {
         // Reset airport state if not at airport anymore
@@ -195,6 +200,7 @@ export default function BookRideScreen({ navigation, route }) {
           console.log('❌ Not at airport anymore, resetting');
           setAirportDetected(false);
           setIsAirportInside(false);
+          setShowAirportModal(false);
         }
       }
     } catch (error) {
@@ -388,9 +394,6 @@ export default function BookRideScreen({ navigation, route }) {
             >
               <Text style={styles.vehicleIcon}>{vehicle.icon}</Text>
               <Text style={styles.vehicleText}>{t(vehicle.type.toLowerCase())}</Text>
-              <Text style={styles.vehiclePrice}>
-                {vehicle.perKm} XOF/km
-              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -411,24 +414,10 @@ export default function BookRideScreen({ navigation, route }) {
                     </Text>
                   </View>
                 )}
-                {!fareDetails?.isAirportFlatRate && (
-                  <>
-                    <View style={styles.fareRow}>
-                      <Text style={styles.fareLabel}>Distance ({fareDetails?.distance?.toFixed(1) || 0} km):</Text>
-                      <Text style={styles.fareValue}>{fareDetails?.distanceFare || 0} XOF</Text>
-                    </View>
-                    <View style={styles.fareRow}>
-                      <Text style={styles.fareLabel}>Rate:</Text>
-                      <Text style={styles.fareValue}>{fareDetails?.perKmRate || 0} XOF/km</Text>
-                    </View>
-                  </>
-                )}
-                {fareDetails?.isAirportFlatRate && (
-                  <View style={styles.fareRow}>
-                    <Text style={styles.fareLabel}>Airport Flat Rate:</Text>
-                    <Text style={styles.fareValue}>{fareDetails?.baseFare || 0} XOF</Text>
-                  </View>
-                )}
+                <View style={styles.fareRow}>
+                  <Text style={styles.fareLabel}>Distance:</Text>
+                  <Text style={styles.fareValue}>{fareDetails?.distance?.toFixed(1) || 0} km</Text>
+                </View>
                 <View style={styles.fareDivider} />
                 <View style={styles.fareRow}>
                   <Text style={styles.fareLabelTotal}>Estimated Total:</Text>
