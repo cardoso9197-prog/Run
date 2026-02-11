@@ -59,6 +59,56 @@ export default function BookRideScreen({ navigation, route }) {
     { type: 'Premium', perKm: 650, icon: '🚙' },
   ];
 
+  // ===== LOCAL AIRPORT DETECTION (Haversine formula) =====
+  // Osvaldo Vieira International Airport coordinates
+  const AIRPORT_LAT = 11.8948;
+  const AIRPORT_LON = -15.6537;
+  const AIRPORT_RADIUS_KM = 1.0; // 1km radius
+
+  const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const isNearAirport = (lat, lon) => {
+    if (!lat || !lon) return false;
+    const dist = getDistanceKm(lat, lon, AIRPORT_LAT, AIRPORT_LON);
+    console.log(`📍 Distance to airport: ${dist.toFixed(3)} km (threshold: ${AIRPORT_RADIUS_KM} km)`);
+    return dist <= AIRPORT_RADIUS_KM;
+  };
+
+  // ===== CHECK AIRPORT ON LOCATION CHANGE =====
+  useEffect(() => {
+    if (pickupLocation && dropoffLocation) {
+      const pickupNear = isNearAirport(pickupLocation.latitude, pickupLocation.longitude);
+      const dropoffNear = isNearAirport(dropoffLocation.latitude, dropoffLocation.longitude);
+      const nearAirport = pickupNear || dropoffNear;
+
+      console.log('✈️ LOCAL Airport Check:', { pickupNear, dropoffNear, nearAirport, choiceMade: airportChoiceMade.current });
+
+      if (nearAirport) {
+        setAirportDetected(true);
+        if (!airportChoiceMade.current) {
+          console.log('🔔 Showing airport modal (local detection)');
+          setShowAirportModal(true);
+        }
+      } else {
+        setAirportDetected(false);
+        setIsAirportInside(false);
+        airportChoiceMade.current = false;
+      }
+    }
+  }, [pickupLocation, dropoffLocation]);
+
   useEffect(() => {
     loadPaymentMethods();
     
@@ -79,7 +129,6 @@ export default function BookRideScreen({ navigation, route }) {
       // Reset fare if any required field is missing
       setEstimatedFare(null);
       setFareDetails(null);
-      setAirportDetected(false);
     }
   }, [vehicleType, pickupLocation, dropoffLocation, isAirportInside]);
 
@@ -183,24 +232,8 @@ export default function BookRideScreen({ navigation, route }) {
         isAirportFlatRate: estimate.isAirportFlatRate || false,
       });
 
-      // Check if airport was detected and show modal if needed
-      if (estimate.airportDetected) {
-        console.log('✈️ Airport detected! airportChoiceMade:', airportChoiceMade.current);
-        setAirportDetected(true);
-        
-        // Only show modal if user hasn't made a choice yet
-        if (!airportChoiceMade.current) {
-          console.log('🔔 First airport detection - showing modal');
-          setShowAirportModal(true);
-        }
-      } else {
-        // Not at airport - reset everything
-        console.log('❌ Not at airport, resetting');
-        setAirportDetected(false);
-        setIsAirportInside(false);
-        setShowAirportModal(false);
-        airportChoiceMade.current = false;
-      }
+      // Airport detection is now handled locally in the useEffect above
+      // No need to check estimate.airportDetected here
     } catch (error) {
       console.error('❌ Fare calculation error:', error);
       setEstimatedFare(null);
