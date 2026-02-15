@@ -112,7 +112,7 @@ app.get('/api/debug/drivers', async (req, res) => {
         d.current_latitude, 
         d.current_longitude,
         d.push_token_updated_at,
-        u.phone_number
+        u.phone
       FROM drivers d
       JOIN users u ON d.user_id = u.id
       ORDER BY d.user_id
@@ -132,7 +132,7 @@ app.get('/api/debug/drivers', async (req, res) => {
       drivers: drivers.rows.map(d => ({
         userId: d.user_id,
         name: d.name,
-        phone: d.phone_number,
+        phone: d.phone,
         status: d.status,
         isActivated: d.is_activated,
         hasPushToken: d.has_push_token,
