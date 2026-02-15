@@ -192,7 +192,7 @@ export default function ActiveRideScreen({ route, navigation }) {
           <Text style={styles.statusBadge}>
             {ride.status === 'accepted' ? '🚗 Heading to Pickup' : '🏁 En Route to Dropoff'}
           </Text>
-          <Text style={styles.fareText}>{Math.round(ride.fare_estimate || 0).toLocaleString()} XOF</Text>
+          <Text style={styles.fareText}>{Math.round(ride.estimatedFare || ride.fare_estimate || 0).toLocaleString()} XOF</Text>
         </View>
 
         {/* Current Destination */}

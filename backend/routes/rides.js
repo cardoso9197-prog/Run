@@ -264,38 +264,51 @@ router.post('/request', requirePassenger, async (req, res) => {
         WHERE d.status = 'online' 
           AND d.is_activated = true
           AND d.push_token IS NOT NULL
-          AND d.current_latitude IS NOT NULL
-          AND d.current_longitude IS NOT NULL
       `);
 
-      if (nearbyDriversResult.rows.length > 0) {
-        // Calculate distance to each driver and add to ride object
-        const driversWithDistance = nearbyDriversResult.rows.map(driver => {
-          const distanceToPickup = calculateDistance(
-            driver.current_latitude,
-            driver.current_longitude,
-            pickupLatitude,
-            pickupLongitude
-          );
-          return {
-            ...driver,
-            distanceToPickup,
-          };
-        });
+      console.log(`🔍 Found ${nearbyDriversResult.rows.length} online drivers with push tokens`);
 
-        // Filter drivers within 10km radius (configurable)
-        const MAX_DISTANCE_KM = 10;
-        const eligibleDrivers = driversWithDistance.filter(
-          driver => driver.distanceToPickup <= MAX_DISTANCE_KM
-        );
+      if (nearbyDriversResult.rows.length > 0) {
+        // Separate drivers with and without GPS
+        const driversWithGPS = nearbyDriversResult.rows.filter(d => d.current_latitude && d.current_longitude);
+        const driversWithoutGPS = nearbyDriversResult.rows.filter(d => !d.current_latitude || !d.current_longitude);
+
+        let eligibleDrivers = [];
+
+        if (driversWithGPS.length > 0) {
+          // Calculate distance for drivers with GPS
+          const driversWithDistance = driversWithGPS.map(driver => {
+            const distanceToPickup = calculateDistance(
+              driver.current_latitude,
+              driver.current_longitude,
+              pickupLatitude,
+              pickupLongitude
+            );
+            return { ...driver, distanceToPickup };
+          });
+
+          // Filter drivers within 10km radius
+          const MAX_DISTANCE_KM = 10;
+          eligibleDrivers = driversWithDistance.filter(
+            driver => driver.distanceToPickup <= MAX_DISTANCE_KM
+          );
+          console.log(`📍 ${eligibleDrivers.length} drivers with GPS within ${MAX_DISTANCE_KM}km`);
+        }
+
+        // Also include drivers without GPS (they might be nearby but GPS not updated)
+        if (driversWithoutGPS.length > 0) {
+          console.log(`� ${driversWithoutGPS.length} drivers without GPS - including them for notifications`);
+          const driversNoGPSWithDefault = driversWithoutGPS.map(d => ({ ...d, distanceToPickup: 0 }));
+          eligibleDrivers = [...eligibleDrivers, ...driversNoGPSWithDefault];
+        }
 
         if (eligibleDrivers.length > 0) {
-          console.log(`📍 Found ${eligibleDrivers.length} eligible drivers within ${MAX_DISTANCE_KM}km`);
+          console.log(`📍 Sending push notifications to ${eligibleDrivers.length} total drivers`);
           
           // Send push notifications
           const rideWithDriverDistance = {
             ...ride,
-            distanceToPickup: eligibleDrivers[0].distanceToPickup, // Use closest driver distance for notification
+            distanceToPickup: eligibleDrivers[0].distanceToPickup,
           };
           
           const notificationResult = await notifyDriversAboutNewRide(
@@ -305,7 +318,7 @@ router.post('/request', requirePassenger, async (req, res) => {
           
           console.log(`✅ Push notifications sent to ${notificationResult.sent} drivers`);
         } else {
-          console.log(`⚠️ No drivers found within ${MAX_DISTANCE_KM}km radius`);
+          console.log(`⚠️ No eligible drivers found for notifications`);
         }
       } else {
         console.log('⚠️ No online drivers with push tokens available');

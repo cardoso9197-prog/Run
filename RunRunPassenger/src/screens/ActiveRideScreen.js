@@ -327,7 +327,7 @@ export default function ActiveRideScreen({ route, navigation }) {
         <View style={styles.fareSection}>
           <Text style={styles.fareLabel}>{t('fare')}</Text>
           <Text style={styles.fareAmount}>
-            {ride.final_fare || ride.fare_estimate} XOF
+            {ride.finalFare || ride.estimatedFare || ride.final_fare || ride.fare_estimate || 0} XOF
           </Text>
         </View>
 
