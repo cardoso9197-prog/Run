@@ -362,9 +362,9 @@ router.get('/active', requirePassenger, async (req, res) => {
       SELECT r.*,
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
-             d.average_rating as driver_rating,
+             u.rating as driver_rating,
              v.make, v.model, v.year, v.color, v.license_plate,
-             u.phone_number as driver_phone
+             u.phone as driver_phone
       FROM rides r
       LEFT JOIN drivers d ON r.driver_id = d.id
       LEFT JOIN vehicles v ON d.vehicle_id = v.id
@@ -781,8 +781,8 @@ router.get('/driver/available', requireDriver, async (req, res) => {
         SELECT r.*,
                p.name as passenger_name,
                p.profile_photo_url as passenger_photo,
-               p.average_rating as passenger_rating,
-               u.phone_number as passenger_phone,
+               u.rating as passenger_rating,
+               u.phone as passenger_phone,
                (6371 * acos(LEAST(1.0, cos(radians($1)) * cos(radians(r.pickup_latitude)) * 
                cos(radians(r.pickup_longitude) - radians($2)) + 
                sin(radians($1)) * sin(radians(r.pickup_latitude))))) AS distance_km
@@ -1111,8 +1111,8 @@ router.get('/driver/active', requireDriver, async (req, res) => {
       SELECT r.*,
              p.name as passenger_name,
              p.profile_photo_url as passenger_photo,
-             p.average_rating as passenger_rating,
-             u.phone_number as passenger_phone
+             u.rating as passenger_rating,
+             u.phone as passenger_phone
       FROM rides r
       JOIN passengers p ON r.passenger_id = p.id
       JOIN users u ON p.user_id = u.id
@@ -1542,11 +1542,11 @@ router.get('/:id', async (req, res) => {
       SELECT r.*,
              p.name as passenger_name,
              p.profile_photo_url as passenger_photo,
-             p.average_rating as passenger_rating,
+             pu.rating as passenger_rating,
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
-             d.average_rating as driver_rating,
-             d.phone_number as driver_phone,
+             du.rating as driver_rating,
+             du.phone as driver_phone,
              v.make as vehicle_make,
              v.model as vehicle_model,
              v.color as vehicle_color,
@@ -1554,7 +1554,9 @@ router.get('/:id', async (req, res) => {
              v.vehicle_type as vehicle_type_name
       FROM rides r
       JOIN passengers p ON r.passenger_id = p.id
+      JOIN users pu ON p.user_id = pu.id
       LEFT JOIN drivers d ON r.driver_id = d.id
+      LEFT JOIN users du ON d.user_id = du.id
       LEFT JOIN vehicles v ON d.vehicle_id = v.id
       WHERE r.id = $1
     `, [rideId]);
