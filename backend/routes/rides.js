@@ -495,11 +495,9 @@ router.put('/:id/cancel', requirePassenger, async (req, res) => {
     await query(`
       UPDATE rides
       SET status = $1,
-          cancelled_at = NOW(),
-          cancelled_by = $2,
-          cancellation_reason = $3
-      WHERE id = $4
-    `, ['cancelled', 'passenger', reason, id]);
+          cancelled_at = NOW()
+      WHERE id = $2
+    `, ['cancelled', id]);
 
     // If driver was assigned, update driver status
     if (ride.driver_id) {
@@ -785,7 +783,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
                u.phone as passenger_phone,
                (6371 * acos(LEAST(1.0, cos(radians($1)) * cos(radians(r.pickup_latitude)) * 
                cos(radians(r.pickup_longitude) - radians($2)) + 
-               sin(radians($1)) * sin(radians(r.pickup_latitude))))) AS distance_km
+               sin(radians($1)) * sin(radians(r.pickup_latitude))))) AS pickup_distance_km
         FROM rides r
         JOIN passengers p ON r.passenger_id = p.id
         JOIN users u ON p.user_id = u.id
@@ -793,8 +791,8 @@ router.get('/driver/available', requireDriver, async (req, res) => {
           AND r.vehicle_type = $3
           AND r.requested_at > NOW() - INTERVAL '10 minutes'
       ) AS nearby_rides
-      WHERE distance_km <= $4
-      ORDER BY distance_km ASC, requested_at ASC
+      WHERE pickup_distance_km <= $4
+      ORDER BY pickup_distance_km ASC, requested_at ASC
       LIMIT 10
     `, [latitude, longitude, vehicleType, radius]);
 
@@ -815,7 +813,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
         estimatedFare: parseFloat(ride.estimated_fare),
         estimatedDistance: parseFloat(ride.estimated_distance_km),
         estimatedDuration: ride.estimated_duration_minutes,
-        distanceToPickup: parseFloat(ride.distance_km),
+        distanceToPickup: parseFloat(ride.pickup_distance_km),
         requestedAt: ride.requested_at,
         passenger: {
           name: ride.passenger_name,
@@ -1380,8 +1378,8 @@ router.put('/:id/cancel', async (req, res) => {
 
     // Update ride status
     await query(
-      'UPDATE rides SET status = $1, cancelled_by = $2, cancellation_reason = $3, updated_at = NOW() WHERE id = $4',
-      ['cancelled', req.user.role, reason || 'No reason provided', rideId]
+      'UPDATE rides SET status = $1, cancelled_at = NOW(), updated_at = NOW() WHERE id = $2',
+      ['cancelled', rideId]
     );
 
     // Refund if payment was made
