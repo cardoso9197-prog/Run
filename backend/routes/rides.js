@@ -181,7 +181,22 @@ router.post('/request', requirePassenger, async (req, res) => {
     );
 
     const estimatedDuration = Math.ceil((distance / 30) * 60);
-    const fareDetails = await calculateFare(distance, estimatedDuration, vehicleType);
+    
+    // Get airport inside/outside parameter from booking
+    const isAirportInside = req.body.isAirportInside === true;
+    
+    // Calculate fare WITH airport detection (pass all coordinates + airport choice)
+    const fareDetails = await calculateFare(
+      distance, 
+      estimatedDuration, 
+      vehicleType,
+      1.0, // surgeMultiplier
+      pickupLatitude,
+      pickupLongitude,
+      dropoffLatitude,
+      dropoffLongitude,
+      isAirportInside
+    );
 
     // Create ride
     const rideResult = await query(`
@@ -683,22 +698,24 @@ router.get('/driver/available', requireDriver, async (req, res) => {
 
     // Find nearby ride requests
     const ridesResult = await query(`
-      SELECT r.*,
-             p.name as passenger_name,
-             p.profile_photo_url as passenger_photo,
-             p.average_rating as passenger_rating,
-             u.phone_number as passenger_phone,
-             (6371 * acos(cos(radians($1)) * cos(radians(r.pickup_latitude)) * 
-             cos(radians(r.pickup_longitude) - radians($2)) + 
-             sin(radians($1)) * sin(radians(r.pickup_latitude)))) AS distance_km
-      FROM rides r
-      JOIN passengers p ON r.passenger_id = p.id
-      JOIN users u ON p.user_id = u.id
-      WHERE r.status = 'requested'
-        AND r.vehicle_type = $3
-        AND r.requested_at > NOW() - INTERVAL '10 minutes'
-      HAVING distance_km <= $4
-      ORDER BY distance_km ASC, r.requested_at ASC
+      SELECT * FROM (
+        SELECT r.*,
+               p.name as passenger_name,
+               p.profile_photo_url as passenger_photo,
+               p.average_rating as passenger_rating,
+               u.phone_number as passenger_phone,
+               (6371 * acos(LEAST(1.0, cos(radians($1)) * cos(radians(r.pickup_latitude)) * 
+               cos(radians(r.pickup_longitude) - radians($2)) + 
+               sin(radians($1)) * sin(radians(r.pickup_latitude))))) AS distance_km
+        FROM rides r
+        JOIN passengers p ON r.passenger_id = p.id
+        JOIN users u ON p.user_id = u.id
+        WHERE r.status = 'requested'
+          AND r.vehicle_type = $3
+          AND r.requested_at > NOW() - INTERVAL '10 minutes'
+      ) AS nearby_rides
+      WHERE distance_km <= $4
+      ORDER BY distance_km ASC, requested_at ASC
       LIMIT 10
     `, [latitude, longitude, vehicleType, radius]);
 
@@ -1429,6 +1446,100 @@ router.get('/history', requirePassenger, async (req, res) => {
     console.error('Get ride history error:', error);
     res.status(500).json({
       error: 'Failed to get ride history',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/rides/:id
+ * Get ride details by ID (for both passenger and driver)
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const rideId = req.params.id;
+
+    const rideResult = await query(`
+      SELECT r.*,
+             p.name as passenger_name,
+             p.profile_photo_url as passenger_photo,
+             p.average_rating as passenger_rating,
+             d.name as driver_name,
+             d.profile_photo_url as driver_photo,
+             d.average_rating as driver_rating,
+             d.phone_number as driver_phone,
+             v.make as vehicle_make,
+             v.model as vehicle_model,
+             v.color as vehicle_color,
+             v.license_plate as vehicle_license_plate,
+             v.vehicle_type as vehicle_type_name
+      FROM rides r
+      JOIN passengers p ON r.passenger_id = p.id
+      LEFT JOIN drivers d ON r.driver_id = d.id
+      LEFT JOIN vehicles v ON d.vehicle_id = v.id
+      WHERE r.id = $1
+    `, [rideId]);
+
+    if (rideResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Ride not found',
+      });
+    }
+
+    const ride = rideResult.rows[0];
+
+    // Build response
+    const rideData = {
+      id: ride.id,
+      status: ride.status,
+      pickupAddress: ride.pickup_address,
+      dropoffAddress: ride.dropoff_address,
+      pickupLocation: {
+        latitude: parseFloat(ride.pickup_latitude),
+        longitude: parseFloat(ride.pickup_longitude),
+      },
+      dropoffLocation: {
+        latitude: parseFloat(ride.dropoff_latitude),
+        longitude: parseFloat(ride.dropoff_longitude),
+      },
+      vehicleType: ride.vehicle_type,
+      estimatedFare: parseFloat(ride.estimated_fare),
+      estimatedDistance: parseFloat(ride.estimated_distance_km),
+      estimatedDuration: ride.estimated_duration_minutes,
+      finalFare: ride.final_fare ? parseFloat(ride.final_fare) : null,
+      requestedAt: ride.requested_at,
+      acceptedAt: ride.accepted_at,
+      startedAt: ride.started_at,
+      completedAt: ride.completed_at,
+      passenger: {
+        name: ride.passenger_name,
+        photo: ride.passenger_photo,
+        rating: parseFloat(ride.passenger_rating) || 0,
+      },
+    };
+
+    // Add driver info if assigned
+    if (ride.driver_id) {
+      rideData.driver = {
+        id: ride.driver_id,
+        name: ride.driver_name,
+        photo: ride.driver_photo,
+        rating: parseFloat(ride.driver_rating) || 0,
+        phone: ride.driver_phone,
+      };
+      rideData.vehicle = {
+        make: ride.vehicle_make,
+        model: ride.vehicle_model,
+        color: ride.vehicle_color,
+        licensePlate: ride.vehicle_license_plate,
+      };
+    }
+
+    res.json(rideData);
+  } catch (error) {
+    console.error('Get ride details error:', error);
+    res.status(500).json({
+      error: 'Failed to get ride details',
       message: error.message,
     });
   }

@@ -284,6 +284,7 @@ export default function BookRideScreen({ navigation, route }) {
         dropoffLongitude: dropoffLocation.longitude,
         vehicleType: vehicleType,
         paymentMethodId: selectedPayment.id,
+        isAirportInside: isAirportInside, // Send airport choice for flat rate calculation
       };
       
       const response = await rideAPI.createRide(bookingData);
