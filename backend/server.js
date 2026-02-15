@@ -3,6 +3,7 @@
  * Main server file for Guinea-Bissau ride sharing platform
  * Developer: Edivaldo Cardoso
  * Email: suporte@runrungb.com
+ * Version: 1.0.1 - bcrypt dependency fix
  */
 
 // Global error handlers
