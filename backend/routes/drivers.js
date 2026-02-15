@@ -11,6 +11,49 @@ const { requireDriver } = require('../middleware/auth');
 const router = express.Router();
 
 /**
+ * GET /api/drivers/debug/status
+ * Debug endpoint to check driver status (remove in production)
+ */
+router.get('/debug/status', async (req, res) => {
+  try {
+    const totalDrivers = await query('SELECT COUNT(*) as count FROM drivers');
+    const onlineDrivers = await query('SELECT COUNT(*) as count FROM drivers WHERE status = $1', ['online']);
+    const activatedDrivers = await query('SELECT COUNT(*) as count FROM drivers WHERE is_activated = true');
+    const onlineActivatedDrivers = await query('SELECT COUNT(*) as count FROM drivers WHERE status = $1 AND is_activated = true', ['online']);
+    const driversWithTokens = await query('SELECT COUNT(*) as count FROM drivers WHERE push_token IS NOT NULL');
+    const onlineDriversWithTokens = await query('SELECT COUNT(*) as count FROM drivers WHERE status = $1 AND push_token IS NOT NULL', ['online']);
+    const onlineActivatedWithTokens = await query('SELECT COUNT(*) as count FROM drivers WHERE status = $1 AND is_activated = true AND push_token IS NOT NULL', ['online']);
+
+    const drivers = await query(`
+      SELECT user_id, status, is_activated, push_token IS NOT NULL as has_push_token,
+             current_latitude, current_longitude
+      FROM drivers
+      ORDER BY user_id
+    `);
+
+    res.json({
+      success: true,
+      summary: {
+        totalDrivers: totalDrivers.rows[0].count,
+        onlineDrivers: onlineDrivers.rows[0].count,
+        activatedDrivers: activatedDrivers.rows[0].count,
+        onlineActivatedDrivers: onlineActivatedDrivers.rows[0].count,
+        driversWithTokens: driversWithTokens.rows[0].count,
+        onlineDriversWithTokens: onlineDriversWithTokens.rows[0].count,
+        onlineActivatedWithTokens: onlineActivatedWithTokens.rows[0].count,
+      },
+      drivers: drivers.rows,
+    });
+  } catch (error) {
+    console.error('Debug status error:', error);
+    res.status(500).json({
+      error: 'Failed to get debug status',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/drivers/profile
  * Get driver profile
  */
