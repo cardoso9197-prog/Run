@@ -62,6 +62,17 @@ router.post('/estimate-fare', async (req, res) => {
 
     // Get airport inside/outside parameter
     const isAirportInside = req.body.isAirportInside === true;
+    
+    console.log('📥 ESTIMATE-FARE REQUEST:', {
+      pickupLat: pickupLatitude,
+      pickupLon: pickupLongitude,
+      dropoffLat: dropoffLatitude,
+      dropoffLon: dropoffLongitude,
+      vehicleType,
+      isAirportInside,
+      typeof_isAirportInside: typeof isAirportInside,
+      body_isAirportInside: req.body.isAirportInside
+    });
 
     // No surge pricing - use flat 1.0 multiplier for normal fares
     const surgeMultiplier = 1.0;

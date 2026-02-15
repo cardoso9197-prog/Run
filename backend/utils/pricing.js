@@ -64,10 +64,25 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     const pickupToAirport = calculateDistance(pickupLat, pickupLon, AIRPORT_LAT, AIRPORT_LON);
     const dropoffToAirport = calculateDistance(dropoffLat, dropoffLon, AIRPORT_LAT, AIRPORT_LON);
     
+    console.log('🛫 AIRPORT FARE DEBUG:', {
+      pickupCoords: `${pickupLat}, ${pickupLon}`,
+      dropoffCoords: `${dropoffLat}, ${dropoffLon}`,
+      pickupToAirport: `${pickupToAirport.toFixed(3)} km`,
+      dropoffToAirport: `${dropoffToAirport.toFixed(3)} km`,
+      airportRadius: `${AIRPORT_RADIUS} km`,
+      isAirportInside: isAirportInside,
+      typeof_isAirportInside: typeof isAirportInside
+    });
+    
     if (pickupToAirport <= AIRPORT_RADIUS || dropoffToAirport <= AIRPORT_RADIUS) {
       airportDetected = true;
       isAirportTrip = isAirportInside === true;
+      console.log('✅ AIRPORT DETECTED:', { airportDetected, isAirportTrip, isAirportInside });
+    } else {
+      console.log('❌ NOT NEAR AIRPORT');
     }
+  } else {
+    console.log('⚠️ MISSING COORDINATES:', { pickupLat, pickupLon, dropoffLat, dropoffLon });
   }
   
   // NEW PRICING: Per km rates for each vehicle type
@@ -87,17 +102,28 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   let distanceFare = 0;
   let isAirportFlatRate = false;
   
+  console.log('💰 FARE CALCULATION:', {
+    distanceKm,
+    vehicleType,
+    perKmRate,
+    isAirportTrip,
+    isAirportInside,
+    airportDetected
+  });
+  
   // If airport trip with inside terminal selected, use flat rate
   if (isAirportTrip) {
     totalFare = AIRPORT_FLAT_RATE;
     baseFare = AIRPORT_FLAT_RATE;
     distanceFare = 0;
     isAirportFlatRate = true;
+    console.log('✈️ APPLYING AIRPORT FLAT RATE:', AIRPORT_FLAT_RATE, 'XOF');
   } else {
     // Normal pricing: distance * per km rate
     baseFare = 0;
     distanceFare = distanceKm * perKmRate;
     totalFare = distanceFare;
+    console.log('🚗 APPLYING NORMAL PRICING:', { distanceFare, totalFare });
   }
 
   
@@ -107,7 +133,7 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   // Round to nearest 50 XOF
   totalFare = Math.round(totalFare / 50) * 50;
 
-  return {
+  const fareResult = {
     baseFare: Math.round(baseFare),
     distanceFare: Math.round(distanceFare),
     durationFare: 0, // No longer using duration-based pricing
@@ -119,6 +145,10 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     airportDetected,
     perKmRate,
   };
+  
+  console.log('📤 RETURNING FARE:', fareResult);
+  
+  return fareResult;
 }
 
 /**
