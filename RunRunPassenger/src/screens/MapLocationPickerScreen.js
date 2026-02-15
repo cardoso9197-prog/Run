@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  FlatList,
+  Keyboard,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -21,6 +24,9 @@ export default function MapLocationPickerScreen({ route, navigation }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     console.log('MapLocationPicker mounted for:', locationType);
@@ -67,6 +73,91 @@ export default function MapLocationPickerScreen({ route, navigation }) {
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setSelectedLocation({ latitude, longitude });
+    setSearchResults([]); // Clear search results when manually selecting on map
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Use expo-location's geocoding to search for places
+      const results = await Location.geocodeAsync(searchQuery);
+      
+      if (results && results.length > 0) {
+        // Convert results to our format with reverse geocoding for better names
+        const formattedResults = await Promise.all(
+          results.slice(0, 5).map(async (result, index) => {
+            try {
+              const addresses = await Location.reverseGeocodeAsync({
+                latitude: result.latitude,
+                longitude: result.longitude,
+              });
+              
+              let locationName = searchQuery;
+              if (addresses && addresses.length > 0) {
+                const address = addresses[0];
+                locationName = [
+                  address.name,
+                  address.street,
+                  address.district,
+                  address.city,
+                  address.region,
+                ]
+                  .filter(Boolean)
+                  .join(', ') || searchQuery;
+              }
+
+              return {
+                id: index,
+                name: locationName,
+                latitude: result.latitude,
+                longitude: result.longitude,
+              };
+            } catch (error) {
+              return {
+                id: index,
+                name: `${result.latitude.toFixed(6)}, ${result.longitude.toFixed(6)}`,
+                latitude: result.latitude,
+                longitude: result.longitude,
+              };
+            }
+          })
+        );
+        
+        setSearchResults(formattedResults);
+      } else {
+        Alert.alert('No Results', 'No locations found for your search. Try a different search term.');
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      Alert.alert('Search Error', 'Could not search for locations. Please try again.');
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (result) => {
+    setSelectedLocation({
+      latitude: result.latitude,
+      longitude: result.longitude,
+    });
+    
+    setRegion({
+      latitude: result.latitude,
+      longitude: result.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+    
+    setSearchQuery(result.name);
+    setSearchResults([]);
+    Keyboard.dismiss();
   };
 
   const handleConfirm = async () => {
@@ -134,6 +225,50 @@ export default function MapLocationPickerScreen({ route, navigation }) {
           <Text style={styles.errorText}>⚠️ {mapError}</Text>
         </View>
       )}
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={`🔍 Search for ${locationType} location...`}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
+        />
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={handleSearch}
+          disabled={isSearching}
+        >
+          {isSearching ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Text style={styles.searchButtonText}>Search</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <View style={styles.searchResultsContainer}>
+          <FlatList
+            data={searchResults}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.searchResultItem}
+                onPress={() => handleSelectSearchResult(item)}
+              >
+                <Text style={styles.searchResultIcon}>📍</Text>
+                <Text style={styles.searchResultText} numberOfLines={2}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
       
       <MapView
         style={styles.map}
@@ -158,7 +293,7 @@ export default function MapLocationPickerScreen({ route, navigation }) {
 
       <View style={styles.instructionBox}>
         <Text style={styles.instructionText}>
-          📍 Tap on the map to select your {locationType} location
+          🔍 Search above or 📍 tap on the map to select your {locationType} location
         </Text>
       </View>
 
@@ -217,6 +352,72 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
     fontSize: 12,
+  },
+  searchContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 15,
+    right: 15,
+    flexDirection: 'row',
+    zIndex: 100,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 15,
+    fontSize: 15,
+    color: '#333',
+  },
+  searchButton: {
+    backgroundColor: '#FF6B00',
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  searchButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  searchResultsContainer: {
+    position: 'absolute',
+    top: 120,
+    left: 15,
+    right: 15,
+    maxHeight: 250,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    zIndex: 99,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  searchResultIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  searchResultText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
   },
   map: {
     flex: 1,

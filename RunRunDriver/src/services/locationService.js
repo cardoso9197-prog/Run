@@ -124,6 +124,28 @@ class LocationService {
   }
 
   /**
+   * Get current location without updating backend
+   */
+  async getCurrentLocation() {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      return {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        heading: location.coords.heading || 0,
+        speed: location.coords.speed || 0,
+        accuracy: location.coords.accuracy || 0,
+      };
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      return null;
+    }
+  }
+
+  /**
    * Check if tracking is active
    */
   isActive() {
