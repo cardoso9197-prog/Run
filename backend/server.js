@@ -90,6 +90,113 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Debug endpoint - no auth required (for troubleshooting)
+app.get('/api/debug/drivers', async (req, res) => {
+  try {
+    const totalDrivers = await pool.query('SELECT COUNT(*) as count FROM drivers');
+    const onlineDrivers = await pool.query("SELECT COUNT(*) as count FROM drivers WHERE status = 'online'");
+    const activatedDrivers = await pool.query('SELECT COUNT(*) as count FROM drivers WHERE is_activated = true');
+    const onlineActivated = await pool.query("SELECT COUNT(*) as count FROM drivers WHERE status = 'online' AND is_activated = true");
+    const withTokens = await pool.query('SELECT COUNT(*) as count FROM drivers WHERE push_token IS NOT NULL');
+    const onlineWithTokens = await pool.query("SELECT COUNT(*) as count FROM drivers WHERE status = 'online' AND is_activated = true AND push_token IS NOT NULL");
+    const withLocation = await pool.query("SELECT COUNT(*) as count FROM drivers WHERE status = 'online' AND is_activated = true AND push_token IS NOT NULL AND current_latitude IS NOT NULL");
+
+    const drivers = await pool.query(`
+      SELECT 
+        d.user_id, 
+        d.status, 
+        d.is_activated, 
+        d.push_token IS NOT NULL as has_push_token,
+        d.push_platform,
+        d.current_latitude, 
+        d.current_longitude,
+        d.push_token_updated_at,
+        u.full_name,
+        u.phone
+      FROM drivers d
+      JOIN users u ON d.user_id = u.id
+      ORDER BY d.user_id
+    `);
+
+    res.json({
+      success: true,
+      summary: {
+        totalDrivers: parseInt(totalDrivers.rows[0].count),
+        onlineDrivers: parseInt(onlineDrivers.rows[0].count),
+        activatedDrivers: parseInt(activatedDrivers.rows[0].count),
+        onlineAndActivated: parseInt(onlineActivated.rows[0].count),
+        withPushTokens: parseInt(withTokens.rows[0].count),
+        onlineActivatedWithTokens: parseInt(onlineWithTokens.rows[0].count),
+        readyForNotifications: parseInt(withLocation.rows[0].count),
+      },
+      drivers: drivers.rows.map(d => ({
+        userId: d.user_id,
+        name: d.full_name,
+        phone: d.phone,
+        status: d.status,
+        isActivated: d.is_activated,
+        hasPushToken: d.has_push_token,
+        pushPlatform: d.push_platform,
+        hasLocation: !!(d.current_latitude && d.current_longitude),
+        lat: d.current_latitude,
+        lng: d.current_longitude,
+        tokenUpdated: d.push_token_updated_at,
+      })),
+      requirements: {
+        note: 'For push notifications to work, a driver needs ALL of these:',
+        criteria: [
+          'status = online (driver tapped Go Online)',
+          'is_activated = true (admin activated driver)',
+          'push_token IS NOT NULL (app registered for notifications)',
+          'current_latitude IS NOT NULL (GPS location available)',
+          'within 10km of pickup location',
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Debug endpoint error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Debug endpoint - test fare calculation
+app.post('/api/debug/test-fare', async (req, res) => {
+  try {
+    const { calculateFare, calculateDistance } = require('./utils/pricing');
+    const { pickupLat, pickupLon, dropoffLat, dropoffLon } = req.body;
+
+    const distance = calculateDistance(
+      pickupLat || 11.8636, pickupLon || -15.5977,
+      dropoffLat || 11.8948, dropoffLon || -15.6537
+    );
+    const duration = Math.ceil((distance / 30) * 60);
+
+    const normalFare = await calculateFare(distance, duration, 'Normal', 1.0, pickupLat, pickupLon, dropoffLat, dropoffLon);
+    const premiumFare = await calculateFare(distance, duration, 'Premium', 1.0, pickupLat, pickupLon, dropoffLat, dropoffLon);
+    const motoFare = await calculateFare(distance, duration, 'Moto', 1.0, pickupLat, pickupLon, dropoffLat, dropoffLon);
+
+    res.json({
+      success: true,
+      distance: distance,
+      duration: duration,
+      fares: {
+        Moto: { perKmRate: 150, totalFare: motoFare.totalFare, details: motoFare },
+        Normal: { perKmRate: 338, totalFare: normalFare.totalFare, details: normalFare },
+        Premium: { perKmRate: 650, totalFare: premiumFare.totalFare, details: premiumFare },
+      },
+      comparison: {
+        premiumShouldBeHigher: premiumFare.totalFare > normalFare.totalFare,
+        normalFare: normalFare.totalFare,
+        premiumFare: premiumFare.totalFare,
+        premiumMultiplier: (premiumFare.totalFare / normalFare.totalFare).toFixed(2) + 'x',
+      },
+    });
+  } catch (error) {
+    console.error('Test fare error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', authenticateToken, rideRoutes);
