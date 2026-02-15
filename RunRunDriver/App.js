@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import './src/i18n/i18n';
+import notificationService from './src/services/notificationService';
 
 // Screens
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -27,6 +28,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isActivated, setIsActivated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigationRef = useRef();
 
   useEffect(() => {
     checkAuthStatus();
@@ -35,6 +37,49 @@ export default function App() {
     const interval = setInterval(checkAuthStatus, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Setup push notifications when driver is logged in and activated
+  useEffect(() => {
+    if (isLoggedIn && isActivated) {
+      setupPushNotifications();
+    }
+
+    return () => {
+      notificationService.removeNotificationListeners();
+    };
+  }, [isLoggedIn, isActivated]);
+
+  const setupPushNotifications = async () => {
+    try {
+      // Register for push notifications
+      const token = await notificationService.registerForPushNotifications();
+      
+      if (token) {
+        // Send token to backend
+        await notificationService.sendTokenToBackend(token);
+        console.log('✅ Push notifications registered successfully');
+      }
+
+      // Setup listeners for notifications
+      notificationService.setupNotificationListeners(
+        (notification) => {
+          // Handle notification received while app is in foreground
+          console.log('📬 New notification received:', notification);
+        },
+        (data) => {
+          // Handle notification tapped
+          console.log('👆 Notification tapped:', data);
+          
+          // Navigate to AvailableRides screen when notification is tapped
+          if (data.type === 'new_ride' && navigationRef.current) {
+            navigationRef.current.navigate('AvailableRides');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('❌ Error setting up push notifications:', error);
+    }
+  };
 
   const checkAuthStatus = async () => {
     try {
@@ -59,7 +104,7 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName={
           !isLoggedIn ? 'Welcome' : !isActivated ? 'PendingActivation' : 'Home'

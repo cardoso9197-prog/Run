@@ -396,4 +396,43 @@ router.get('/stats', requireDriver, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/drivers/push-token
+ * Save driver's push notification token
+ */
+router.post('/push-token', requireDriver, async (req, res) => {
+  try {
+    const { pushToken, platform } = req.body;
+
+    if (!pushToken) {
+      return res.status(400).json({
+        error: 'Push token is required',
+      });
+    }
+
+    // Update driver's push token in database
+    await query(`
+      UPDATE drivers 
+      SET push_token = $1, 
+          push_platform = $2,
+          push_token_updated_at = NOW()
+      WHERE user_id = $3
+    `, [pushToken, platform || 'unknown', req.user.id]);
+
+    console.log(`✅ Push token saved for driver ${req.user.id}`);
+
+    res.json({
+      success: true,
+      message: 'Push token saved successfully',
+    });
+  } catch (error) {
+    console.error('Save push token error:', error);
+    res.status(500).json({
+      error: 'Failed to save push token',
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
+

@@ -8,6 +8,7 @@ const express = require('express');
 const { pool, query } = require('../database/db');
 const { requirePassenger, requireDriver } = require('../middleware/auth');
 const { calculateFare, calculateDistance } = require('../utils/pricing');
+const { notifyDriversAboutNewRide } = require('../utils/pushNotifications');
 
 const router = express.Router();
 
@@ -246,6 +247,72 @@ router.post('/request', requirePassenger, async (req, res) => {
     ]);
 
     const ride = rideResult.rows[0];
+
+    // Find nearby online drivers and send push notifications
+    try {
+      // Get all online drivers with push tokens
+      const nearbyDriversResult = await query(`
+        SELECT 
+          d.id,
+          d.user_id,
+          d.push_token,
+          d.push_platform,
+          d.current_latitude,
+          d.current_longitude
+        FROM drivers d
+        WHERE d.status = 'online' 
+          AND d.is_activated = true
+          AND d.push_token IS NOT NULL
+          AND d.current_latitude IS NOT NULL
+          AND d.current_longitude IS NOT NULL
+      `);
+
+      if (nearbyDriversResult.rows.length > 0) {
+        // Calculate distance to each driver and add to ride object
+        const driversWithDistance = nearbyDriversResult.rows.map(driver => {
+          const distanceToPickup = calculateDistance(
+            driver.current_latitude,
+            driver.current_longitude,
+            pickupLatitude,
+            pickupLongitude
+          );
+          return {
+            ...driver,
+            distanceToPickup,
+          };
+        });
+
+        // Filter drivers within 10km radius (configurable)
+        const MAX_DISTANCE_KM = 10;
+        const eligibleDrivers = driversWithDistance.filter(
+          driver => driver.distanceToPickup <= MAX_DISTANCE_KM
+        );
+
+        if (eligibleDrivers.length > 0) {
+          console.log(`📍 Found ${eligibleDrivers.length} eligible drivers within ${MAX_DISTANCE_KM}km`);
+          
+          // Send push notifications
+          const rideWithDriverDistance = {
+            ...ride,
+            distanceToPickup: eligibleDrivers[0].distanceToPickup, // Use closest driver distance for notification
+          };
+          
+          const notificationResult = await notifyDriversAboutNewRide(
+            rideWithDriverDistance,
+            eligibleDrivers
+          );
+          
+          console.log(`✅ Push notifications sent to ${notificationResult.sent} drivers`);
+        } else {
+          console.log(`⚠️ No drivers found within ${MAX_DISTANCE_KM}km radius`);
+        }
+      } else {
+        console.log('⚠️ No online drivers with push tokens available');
+      }
+    } catch (notificationError) {
+      // Don't fail the ride request if notifications fail
+      console.error('❌ Failed to send push notifications:', notificationError);
+    }
 
     res.status(201).json({
       success: true,
