@@ -66,7 +66,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'Run Run API Server',
-    version: '1.0.2',
+    version: '1.0.3',
     status: 'running',
     timestamp: new Date().toISOString(),
   });
@@ -104,6 +104,7 @@ app.get('/api/debug/drivers', async (req, res) => {
     const drivers = await pool.query(`
       SELECT 
         d.user_id, 
+        d.name,
         d.status, 
         d.is_activated, 
         d.push_token IS NOT NULL as has_push_token,
@@ -111,8 +112,7 @@ app.get('/api/debug/drivers', async (req, res) => {
         d.current_latitude, 
         d.current_longitude,
         d.push_token_updated_at,
-        u.full_name,
-        u.phone
+        u.phone_number
       FROM drivers d
       JOIN users u ON d.user_id = u.id
       ORDER BY d.user_id
@@ -131,8 +131,8 @@ app.get('/api/debug/drivers', async (req, res) => {
       },
       drivers: drivers.rows.map(d => ({
         userId: d.user_id,
-        name: d.full_name,
-        phone: d.phone,
+        name: d.name,
+        phone: d.phone_number,
         status: d.status,
         isActivated: d.is_activated,
         hasPushToken: d.has_push_token,
