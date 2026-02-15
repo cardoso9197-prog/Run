@@ -66,7 +66,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'Run Run API Server',
-    version: '1.0.3',
+    version: '1.0.4',
     status: 'running',
     timestamp: new Date().toISOString(),
   });
