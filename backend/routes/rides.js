@@ -69,7 +69,8 @@ router.post('/estimate-fare', async (req, res) => {
       pickupLon: pickupLongitude,
       dropoffLat: dropoffLatitude,
       dropoffLon: dropoffLongitude,
-      vehicleType,
+      vehicleType: vehicleType || 'NOT_PROVIDED_DEFAULTING_TO_NORMAL',
+      vehicleTypeRaw: req.body.vehicleType,
       isAirportInside,
       typeof_isAirportInside: typeof isAirportInside,
       body_isAirportInside: req.body.isAirportInside
