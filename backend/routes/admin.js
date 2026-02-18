@@ -82,6 +82,25 @@ router.post('/drivers/activate/:driverId', requireAdmin, async (req, res) => {
 });
 
 /**
+ * DELETE /api/admin/drivers/:userId
+ * Permanently delete a driver and their user account
+ */
+router.delete('/drivers/:userId', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const check = await query('SELECT u.id, u.name, u.phone FROM users u WHERE u.id = $1', [userId]);
+    if (check.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    await query('DELETE FROM drivers WHERE user_id = $1', [userId]);
+    await query('DELETE FROM users WHERE id = $1', [userId]);
+    
+    res.json({ success: true, deleted: check.rows[0], message: `Driver ${check.rows[0].name} deleted successfully` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/admin/drivers/deactivate/:driverId
  * Deactivate a driver account
  */
