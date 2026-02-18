@@ -760,7 +760,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
     }
 
     const driverResult = await query(
-      'SELECT id, vehicle_id FROM drivers WHERE user_id = $1',
+      'SELECT id, vehicle_id, vehicle_type FROM drivers WHERE user_id = $1',
       [req.user.id]
     );
 
@@ -772,19 +772,8 @@ router.get('/driver/available', requireDriver, async (req, res) => {
 
     const driver = driverResult.rows[0];
 
-    // Get vehicle type
-    const vehicleResult = await query(
-      'SELECT vehicle_type FROM vehicles WHERE id = $1',
-      [driver.vehicle_id]
-    );
-
-    if (vehicleResult.rows.length === 0) {
-      return res.status(400).json({
-        error: 'Vehicle not found',
-      });
-    }
-
-    const vehicleType = vehicleResult.rows[0].vehicle_type;
+    // Get vehicle type directly from driver record, default to 'RunRun'
+    const vehicleType = driver.vehicle_type || 'RunRun';
 
     // Find nearby ride requests
     const ridesResult = await query(`
