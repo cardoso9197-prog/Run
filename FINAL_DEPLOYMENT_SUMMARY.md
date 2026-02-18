@@ -13,13 +13,13 @@
 
 **Admin Credentials:**
 - Email: `cardoso9197@gmail.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 - Password Hash: `$2b$10$OG7TuntsK2g6ws1EFP8ZXuxRZWM2viFYUKqq1irqbKhE9hXCRkPz6`
 
 #### 2. Railway API Integration ✅
 - **API Client:** `src/lib/api.ts`
 - **Backend Connection:** Ready for Railway PostgreSQL
-- **Admin Key:** `runrun-admin-2025`
+- **Admin Key:** `[REDACTED]`
 - **Endpoints Integrated:**
   - Dashboard statistics
   - User management
@@ -139,7 +139,7 @@ netlify deploy --prod
 2. Navigate to `/admin/login`
 3. Login with credentials:
    - Email: `cardoso9197@gmail.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
 4. Verify dashboard loads with data
 5. Test all admin features
 6. Check browser console for errors
@@ -172,7 +172,7 @@ netlify deploy --prod
 2. **Keep admin credentials secure** - Share only with authorized personnel
 3. **Monitor login attempts** - Check for suspicious activity
 4. **Regular password changes** - Update every 90 days recommended
-5. **Backend admin key** - Keep `runrun-admin-2025` secure
+5. **Backend admin key** - Keep `[REDACTED]` secure
 
 ---
 

@@ -50,7 +50,7 @@ You can test if the backend endpoint works:
 
 ```powershell
 # Test dashboard endpoint
-curl http://localhost:5000/api/admin/dashboard -H "x-admin-key: runrun-admin-2025"
+curl http://localhost:5000/api/admin/dashboard -H "x-admin-key: [REDACTED]"
 ```
 
 Expected response:

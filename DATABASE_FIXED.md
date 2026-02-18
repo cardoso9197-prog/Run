@@ -66,7 +66,7 @@ The dashboard will show:
 You can verify it's working:
 
 ```powershell
-curl http://localhost:5000/api/admin/dashboard -H "x-admin-key: runrun-admin-2025"
+curl http://localhost:5000/api/admin/dashboard -H "x-admin-key: [REDACTED]"
 ```
 
 Should return JSON like:

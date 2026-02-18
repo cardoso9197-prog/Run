@@ -10,7 +10,7 @@
 **Features:**
 - Secure login with hard-coded admin credentials
 - Email: `cardoso9197@gmail.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 - LocalStorage session management
 - Auto-redirect if not authenticated
 - Logout functionality
@@ -167,7 +167,7 @@ netlify deploy --prod
 1. Visit: `https://your-site.netlify.app/admin/login`
 2. Login with:
    - Email: `cardoso9197@gmail.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
 3. Verify dashboard loads data from Railway
 
 ---
@@ -270,11 +270,11 @@ Before deploying to production:
 **Admin Login:**
 - URL: `/admin/login`
 - Email: `cardoso9197@gmail.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 
 **Backend Admin Key:**
 - Header: `x-admin-key`
-- Value: `runrun-admin-2025`
+- Value: `[REDACTED]`
 
 ---
 

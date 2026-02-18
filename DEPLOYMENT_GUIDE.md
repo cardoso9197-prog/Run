@@ -67,7 +67,7 @@ netlify deploy --prod
 2. Test admin login:
    - Go to `/admin/login`
    - Email: `cardoso9197@gmail.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
 3. Verify admin dashboard connects to Railway backend
 
 ---
@@ -77,7 +77,7 @@ netlify deploy --prod
 ### Login Credentials
 - **URL:** `https://your-site.netlify.app/admin/login`
 - **Email:** `cardoso9197@gmail.com`
-- **Password:** `Inside9791@`
+- **Password:** `[REDACTED]`
 
 ### Admin Features
 - ✅ Dashboard with real-time stats from Railway DB
@@ -151,7 +151,7 @@ npm start
 1. Clear browser localStorage
 2. Verify credentials:
    - Email: `cardoso9197@gmail.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
 3. Check browser console for errors
 
 ### Issue: 404 errors on page refresh

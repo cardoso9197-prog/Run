@@ -34,7 +34,7 @@
 
 1. **Invalid Email Test**
    - Email: `wrong@email.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
    - Expected: ❌ "Email ou senha incorretos"
 
 2. **Invalid Password Test**
@@ -44,7 +44,7 @@
 
 3. **Valid Login Test** ⭐
    - Email: `cardoso9197@gmail.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
    - Expected: ✅ Redirect to dashboard `/admin`
 
 ### Step 2: Test Dashboard
@@ -176,7 +176,7 @@ netlify deploy --prod
 - [ ] Test invalid credentials (should show error)
 - [ ] Test valid credentials:
   - Email: `cardoso9197@gmail.com`
-  - Password: `Inside9791@`
+  - Password: `[REDACTED]`
 - [ ] Dashboard loads with data
 - [ ] No console errors (F12)
 - [ ] Test logout
@@ -222,10 +222,10 @@ netlify deploy --prod
 
 **Admin Login:**
 - Email: `cardoso9197@gmail.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 
 **Backend:**
-- Admin Key: `runrun-admin-2025`
+- Admin Key: `[REDACTED]`
 
 **Keep these secure!** 🔒
 
@@ -254,7 +254,7 @@ npm run build 2>&1 | Select-String "error"
 
 ### Issue: Login doesn't work
 - Check email is exactly: `cardoso9197@gmail.com`
-- Check password is exactly: `Inside9791@`
+- Check password is exactly: `[REDACTED]`
 - Check browser console for errors
 - Verify bcryptjs is installed: `npm list bcryptjs`
 
@@ -319,7 +319,7 @@ Before you consider the project complete:
 
 Use credentials:
 - Email: `cardoso9197@gmail.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 
 Then proceed to Phase 2 (Production Preparation)! 🚀
 

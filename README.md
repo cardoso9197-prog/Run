@@ -10,7 +10,7 @@ Production: https://your-site.netlify.app/admin/login
 
 ### Credentials
 - **Email:** `cardoso9197@gmail.com`
-- **Password:** `Inside9791@`
+- **Password:** `[REDACTED]`
 
 ---
 

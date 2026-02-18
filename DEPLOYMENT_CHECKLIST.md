@@ -48,7 +48,7 @@
 - [ ] Visit: `https://your-site.netlify.app/admin/login`
 - [ ] Test admin login:
   - Email: `cardoso9197@gmail.com`
-  - Password: `Inside9791@`
+  - Password: `[REDACTED]`
 - [ ] Verify redirected to admin dashboard
 - [ ] Check dashboard loads stats from Railway
 - [ ] Test logout button

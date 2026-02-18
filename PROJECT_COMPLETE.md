@@ -42,7 +42,7 @@
 - Logout functionality
 
 **Security:**
-- Password: `Inside9791@` → Hash: `$2b$10$OG7TuntsK2g6ws1EFP8ZXuxRZWM2viFYUKqq1irqbKhE9hXCRkPz6`
+- Password: `[REDACTED]` → Hash: `$2b$10$OG7TuntsK2g6ws1EFP8ZXuxRZWM2viFYUKqq1irqbKhE9hXCRkPz6`
 - Session tokens with timestamp
 - No plain text credentials in code
 
@@ -113,7 +113,7 @@
 - ✅ HTTPS ready
 
 **Backend Security:**
-- Admin key: `runrun-admin-2025`
+- Admin key: `[REDACTED]`
 - Header validation required
 - Secure API endpoints
 
@@ -176,8 +176,8 @@
 ## 🔐 Admin Credentials
 
 **Email:** `cardoso9197@gmail.com`  
-**Password:** `Inside9791@`  
-**Backend Admin Key:** `runrun-admin-2025`
+**Password:** `[REDACTED]`  
+**Backend Admin Key:** `[REDACTED]`
 
 ⚠️ **Keep these credentials secure!**
 
@@ -214,7 +214,7 @@ runrun-web/
 1. **Open:** http://localhost:3000/admin/login
 2. **Login with:**
    - Email: `cardoso9197@gmail.com`
-   - Password: `Inside9791@`
+   - Password: `[REDACTED]`
 3. **Expected:** Redirect to dashboard at `/admin`
 4. **Verify:** 
    - Dashboard loads

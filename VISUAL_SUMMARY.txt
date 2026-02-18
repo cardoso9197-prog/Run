@@ -84,7 +84,7 @@
    Step 2: Go to: http://localhost:3000/admin/login
    Step 3: Enter credentials:
            📧 Email:    cardoso9197@gmail.com
-           🔑 Password: Inside9791@
+           🔑 Password: [REDACTED]
    Step 4: Click "Entrar"
    Step 5: Verify redirect to dashboard
 
@@ -94,8 +94,8 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
    Email:              cardoso9197@gmail.com
-   Password:           Inside9791@
-   Backend Admin Key:  runrun-admin-2025
+   Password:           [REDACTED]
+   Backend Admin Key:  [REDACTED]
    Password Hash:      $2b$10$OG7TuntsK2g6ws1EFP8ZXuxRZWM2vi...
 
    ⚠️  KEEP THESE CREDENTIALS SECURE! DO NOT SHARE! ⚠️

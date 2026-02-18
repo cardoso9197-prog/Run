@@ -16,7 +16,7 @@
 ### Step 2: Test Invalid Credentials
 **Test 1: Wrong Email**
 - Email: `wrong@email.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 - ✅ Expected: "Email ou senha incorretos" error message
 
 **Test 2: Wrong Password**
@@ -31,7 +31,7 @@
 ### Step 3: Test Valid Credentials ⭐
 **Correct Credentials:**
 - Email: `cardoso9197@gmail.com`
-- Password: `Inside9791@`
+- Password: `[REDACTED]`
 - ✅ Expected: Redirect to `/admin` dashboard
 
 ### Step 4: Verify Dashboard
@@ -213,8 +213,8 @@ _________________________________
 ## 🔐 Test Credentials Reference
 
 **Admin Email:** `cardoso9197@gmail.com`  
-**Admin Password:** `Inside9791@`  
-**Backend Admin Key:** `runrun-admin-2025`
+**Admin Password:** `[REDACTED]`  
+**Backend Admin Key:** `[REDACTED]`
 
 ---
 

@@ -9,7 +9,7 @@
 
 ### Admin Credentials
 - **Email:** `cardoso9197@gmail.com`
-- **Password:** `Inside9791@` (use this to login)
+- **Password:** `[REDACTED]` (use this to login)
 - **Password Hash:** `$2b$10$OG7TuntsK2g6ws1EFP8ZXuxRZWM2viFYUKqq1irqbKhE9hXCRkPz6`
 
 ### How It Works
@@ -36,7 +36,7 @@
 - ✅ Session validation on protected pages
 
 ### 4. API Security
-- ✅ Admin key header required (`x-admin-key: runrun-admin-2025`)
+- ✅ Admin key header required (`x-admin-key: [REDACTED]`)
 - ✅ Backend validates all admin requests
 - ✅ Error handling for unauthorized access
 
@@ -49,7 +49,7 @@ Move sensitive data to environment variables:
 # .env.local (DO NOT commit to git)
 NEXT_PUBLIC_ADMIN_EMAIL=cardoso9197@gmail.com
 ADMIN_PASSWORD_HASH=$2b$10$OG7TuntsK2g6ws1EFP8ZXuxRZWM2viFYUKqq1irqbKhE9hXCRkPz6
-NEXT_PUBLIC_BACKEND_ADMIN_KEY=runrun-admin-2025
+NEXT_PUBLIC_BACKEND_ADMIN_KEY=[REDACTED]
 ```
 
 ### 2. HTTPS Only
