@@ -60,12 +60,9 @@ router.get('/debug/status', async (req, res) => {
 router.get('/profile', requireDriver, async (req, res) => {
   try {
     const result = await query(`
-      SELECT d.*,
-             v.make, v.model, v.year, v.color, v.license_plate, v.vehicle_type,
-             u.phone
+      SELECT d.*, u.phone
       FROM drivers d
       JOIN users u ON d.user_id = u.id
-      LEFT JOIN vehicles v ON d.vehicle_id = v.id
       WHERE d.user_id = $1
     `, [req.user.id]);
 
