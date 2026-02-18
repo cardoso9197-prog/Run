@@ -4,6 +4,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'reac
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
+import notificationService from '../services/notificationService';
 
 export default function OTPVerificationScreen({ route, navigation }) {
   const { t } = useTranslation();
@@ -45,6 +46,15 @@ export default function OTPVerificationScreen({ route, navigation }) {
           index: 0, 
           routes: [{ name: isActivated ? 'Home' : 'PendingActivation' }] 
         });
+
+        // Register push notifications in background (don't block navigation)
+        notificationService.registerForPushNotifications()
+          .then(token => {
+            if (token) {
+              return notificationService.sendTokenToBackend(token);
+            }
+          })
+          .catch(err => console.log('Push token registration error:', err));
       }
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Invalid OTP code');

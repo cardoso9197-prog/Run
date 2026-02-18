@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } f
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { driverAPI } from '../services/api';
+import notificationService from '../services/notificationService';
 
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
@@ -12,6 +13,12 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     loadDriverData();
+    // Register push notifications every time HomeScreen mounts
+    notificationService.registerForPushNotifications()
+      .then(token => {
+        if (token) return notificationService.sendTokenToBackend(token);
+      })
+      .catch(err => console.log('Push setup error:', err));
   }, []);
 
   const loadDriverData = async () => {
