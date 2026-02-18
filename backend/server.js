@@ -159,6 +159,23 @@ app.get('/api/debug/drivers', async (req, res) => {
   }
 });
 
+// Debug endpoint - delete a driver by userId
+app.delete('/api/debug/drivers/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const check = await pool.query('SELECT u.id, u.name, u.phone FROM users u WHERE u.id = $1', [userId]);
+    if (check.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    await pool.query('DELETE FROM drivers WHERE user_id = $1', [userId]);
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+    
+    res.json({ success: true, deleted: check.rows[0], message: 'Driver and user deleted successfully' });
+  } catch (error) {
+    console.error('Delete driver error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Debug endpoint - test fare calculation
 app.post('/api/debug/test-fare', async (req, res) => {
   try {
