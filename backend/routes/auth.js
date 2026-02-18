@@ -224,12 +224,10 @@ router.post('/verify-otp', async (req, res) => {
       );
       profile = profileResult.rows[0];
     } else if (userType === 'driver') {
-      const profileResult = await query(`
-        SELECT d.*, v.make, v.model, v.year, v.color, v.license_plate, v.vehicle_type
-        FROM drivers d
-        LEFT JOIN vehicles v ON d.vehicle_id = v.id
-        WHERE d.user_id = $1
-      `, [userId]);
+      const profileResult = await query(
+        'SELECT * FROM drivers WHERE user_id = $1',
+        [userId]
+      );
       profile = profileResult.rows[0];
     }
 
@@ -307,12 +305,10 @@ router.post('/login', async (req, res) => {
       );
       profile = profileResult.rows[0];
     } else if (user.user_type === 'driver') {
-      const profileResult = await query(`
-        SELECT d.*, v.make, v.model, v.year, v.color, v.license_plate, v.vehicle_type
-        FROM drivers d
-        LEFT JOIN vehicles v ON d.vehicle_id = v.id
-        WHERE d.user_id = $1
-      `, [user.id]);
+      const profileResult = await query(
+        'SELECT * FROM drivers WHERE user_id = $1',
+        [user.id]
+      );
       profile = profileResult.rows[0];
     }
 
