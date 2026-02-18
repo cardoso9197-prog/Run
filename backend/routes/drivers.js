@@ -474,5 +474,15 @@ router.post('/push-token', requireDriver, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/drivers/push-token-error
+ * Log push token registration errors from app (for debugging)
+ */
+router.post('/push-token-error', requireDriver, async (req, res) => {
+  const { error, platform } = req.body;
+  console.error(`❌ PUSH TOKEN ERROR from driver ${req.user.id} on ${platform}: ${error}`);
+  res.json({ received: true });
+});
+
 module.exports = router;
 
