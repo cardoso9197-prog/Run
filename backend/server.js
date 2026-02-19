@@ -768,6 +768,15 @@ async function ensurePaymentMethodsTable() {
     await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;");
     console.log("OK: driver columns ensured");
 
+    // Cancel stale 'requested' rides older than 30 minutes (passenger forgot to cancel)
+    const staleResult = await pool.query(`
+      UPDATE rides SET status = 'cancelled', cancellation_reason = 'Auto-cancelled: no driver accepted within 30 minutes', cancelled_at = NOW()
+      WHERE status = 'requested' AND requested_at < NOW() - INTERVAL '30 minutes'
+    `);
+    if (staleResult.rowCount > 0) {
+      console.log(`🧹 Auto-cancelled ${staleResult.rowCount} stale requested rides`);
+    }
+
     // Ensure driver_locations table exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS driver_locations (

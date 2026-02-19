@@ -43,14 +43,11 @@ export default function HomeScreen({ navigation }) {
 
   const checkActiveRide = async () => {
     try {
-      const response = await rideAPI.getRides();
-      const active = response.data.find(
-        (ride) =>
-          ride.status === 'requested' ||
-          ride.status === 'accepted' ||
-          ride.status === 'started'
-      );
-      setActiveRide(active);
+      // Use /rides/active which only returns accepted/arrived/started rides
+      // This prevents old stale 'requested' rides from blocking new bookings
+      const response = await rideAPI.getActiveRide();
+      const ride = response.data?.ride || null;
+      setActiveRide(ride);
     } catch (error) {
       // Silent error - no active ride
     }
