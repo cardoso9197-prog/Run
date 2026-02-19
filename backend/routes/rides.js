@@ -375,12 +375,11 @@ router.get('/active', requirePassenger, async (req, res) => {
       SELECT r.*,
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
+             d.vehicle_type as driver_vehicle_type,
              u.rating as driver_rating,
-             v.make, v.model, v.year, v.color, v.license_plate,
              u.phone as driver_phone
       FROM rides r
       LEFT JOIN drivers d ON r.driver_id = d.id
-      LEFT JOIN vehicles v ON d.vehicle_id = v.id
       LEFT JOIN users u ON d.user_id = u.id
       WHERE r.passenger_id = $1
         AND r.status IN ($2, $3, $4)
@@ -444,11 +443,7 @@ router.get('/active', requirePassenger, async (req, res) => {
           currentLocation: driverLocation,
         } : null,
         vehicle: ride.driver_id ? {
-          make: ride.make,
-          model: ride.model,
-          year: ride.year,
-          color: ride.color,
-          licensePlate: ride.license_plate,
+          vehicleType: ride.driver_vehicle_type || ride.vehicle_type || 'RunRun',
         } : null,
       },
     });
@@ -559,10 +554,9 @@ router.get('/history', requirePassenger, async (req, res) => {
       SELECT r.*,
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
-             v.make, v.model, v.color, v.license_plate
+             d.vehicle_type as driver_vehicle_type
       FROM rides r
       LEFT JOIN drivers d ON r.driver_id = d.id
-      LEFT JOIN vehicles v ON d.vehicle_id = v.id
       WHERE r.passenger_id = $1
     `;
 
@@ -614,10 +608,7 @@ router.get('/history', requirePassenger, async (req, res) => {
           photo: ride.driver_photo,
         } : null,
         vehicle: ride.driver_id ? {
-          make: ride.make,
-          model: ride.model,
-          color: ride.color,
-          licensePlate: ride.license_plate,
+          vehicleType: ride.driver_vehicle_type || ride.vehicle_type || 'RunRun',
         } : null,
         rating: ride.passenger_rating,
         comment: ride.passenger_comment,
@@ -760,7 +751,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
     }
 
     const driverResult = await query(
-      'SELECT id, vehicle_id, vehicle_type FROM drivers WHERE user_id = $1',
+      'SELECT id, vehicle_type FROM drivers WHERE user_id = $1',
       [req.user.id]
     );
 
@@ -770,12 +761,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
       });
     }
 
-    const driver = driverResult.rows[0];
-
-    // Get vehicle type directly from driver record, default to 'RunRun'
-    const vehicleType = driver.vehicle_type || 'RunRun';
-
-    // Find nearby ride requests
+    // Find nearby ride requests — no vehicle type filter (all drivers see all rides)
     const ridesResult = await query(`
       SELECT * FROM (
         SELECT r.*,
@@ -790,13 +776,12 @@ router.get('/driver/available', requireDriver, async (req, res) => {
         JOIN passengers p ON r.passenger_id = p.id
         JOIN users u ON p.user_id = u.id
         WHERE r.status = 'requested'
-          AND r.vehicle_type = $3
           AND r.requested_at > NOW() - INTERVAL '10 minutes'
       ) AS nearby_rides
-      WHERE pickup_distance_km <= $4
+      WHERE pickup_distance_km <= $3
       ORDER BY pickup_distance_km ASC, requested_at ASC
       LIMIT 10
-    `, [latitude, longitude, vehicleType, radius]);
+    `, [latitude, longitude, radius]);
 
     res.json({
       success: true,
@@ -1451,11 +1436,9 @@ router.get('/history', requirePassenger, async (req, res) => {
       SELECT
         r.*,
         d.id as driver_id,
-        u.name as driver_name,
+        d.name as driver_name,
+        d.vehicle_type as driver_vehicle_type,
         u.phone as driver_phone,
-        v.vehicle_type,
-        v.license_plate,
-        v.vehicle_color,
         p.amount as paid_amount,
         p.payment_method,
         p.status as payment_status,
@@ -1464,7 +1447,6 @@ router.get('/history', requirePassenger, async (req, res) => {
       FROM rides r
       LEFT JOIN drivers d ON r.driver_id = d.id
       LEFT JOIN users u ON d.user_id = u.id
-      LEFT JOIN vehicles v ON d.id = v.driver_id
       LEFT JOIN payments p ON r.id = p.ride_id
       LEFT JOIN ratings rat ON r.id = rat.ride_id
       WHERE r.passenger_id = $1
@@ -1499,9 +1481,7 @@ router.get('/history', requirePassenger, async (req, res) => {
           name: ride.driver_name,
           phone: ride.driver_phone,
           vehicle: {
-            type: ride.vehicle_type,
-            plate: ride.license_plate,
-            color: ride.vehicle_color,
+            type: ride.driver_vehicle_type || ride.vehicle_type || 'RunRun',
           },
         } : null,
         payment: {
@@ -1545,19 +1525,14 @@ router.get('/:id', async (req, res) => {
              pu.rating as passenger_rating,
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
+             d.vehicle_type as vehicle_type_name,
              du.rating as driver_rating,
-             du.phone as driver_phone,
-             v.make as vehicle_make,
-             v.model as vehicle_model,
-             v.color as vehicle_color,
-             v.license_plate as vehicle_license_plate,
-             v.vehicle_type as vehicle_type_name
+             du.phone as driver_phone
       FROM rides r
       JOIN passengers p ON r.passenger_id = p.id
       JOIN users pu ON p.user_id = pu.id
       LEFT JOIN drivers d ON r.driver_id = d.id
       LEFT JOIN users du ON d.user_id = du.id
-      LEFT JOIN vehicles v ON d.vehicle_id = v.id
       WHERE r.id = $1
     `, [rideId]);
 
@@ -1609,10 +1584,7 @@ router.get('/:id', async (req, res) => {
         phone: ride.driver_phone,
       };
       rideData.vehicle = {
-        make: ride.vehicle_make,
-        model: ride.vehicle_model,
-        color: ride.vehicle_color,
-        licensePlate: ride.vehicle_license_plate,
+        vehicleType: ride.vehicle_type_name || ride.vehicle_type || 'RunRun',
       };
     }
 
