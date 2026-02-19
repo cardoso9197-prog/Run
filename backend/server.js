@@ -756,6 +756,18 @@ async function ensurePaymentMethodsTable() {
     await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER DEFAULT 0;");
     console.log("OK: rides.cancellation_fee column ensured");
 
+    // Ensure all required driver columns exist
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS push_token TEXT;");
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS push_platform VARCHAR(20);");
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS push_token_updated_at TIMESTAMP;");
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS is_activated BOOLEAN DEFAULT false;");
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(50) DEFAULT 'Normal';");
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_latitude DECIMAL(10,8);");
+    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_longitude DECIMAL(11,8);");
+    await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP;");
+    await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;");
+    console.log("OK: driver columns ensured");
+
     // Ensure driver_locations table exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS driver_locations (

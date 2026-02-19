@@ -773,7 +773,7 @@ router.post('/:id/rate', requirePassenger, async (req, res) => {
  */
 router.get('/driver/available', requireDriver, async (req, res) => {
   try {
-    const { latitude, longitude, radius = 5 } = req.query;
+    const { latitude, longitude, radius = 50 } = req.query;
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -792,7 +792,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
       });
     }
 
-    // Find nearby ride requests — no vehicle type filter (all drivers see all rides)
+    // Find nearby ride requests — no vehicle type filter, large radius for small country
     const ridesResult = await query(`
       SELECT * FROM (
         SELECT r.*,
@@ -807,7 +807,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
         JOIN passengers p ON r.passenger_id = p.id
         JOIN users u ON p.user_id = u.id
         WHERE r.status = 'requested'
-          AND r.requested_at > NOW() - INTERVAL '10 minutes'
+          AND r.requested_at > NOW() - INTERVAL '30 minutes'
       ) AS nearby_rides
       WHERE pickup_distance_km <= $3
       ORDER BY pickup_distance_km ASC, requested_at ASC
