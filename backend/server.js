@@ -756,6 +756,23 @@ async function ensurePaymentMethodsTable() {
     await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER DEFAULT 0;");
     console.log("OK: rides.cancellation_fee column ensured");
 
+    // Ensure driver_locations table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_locations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+        latitude DECIMAL(10, 8) NOT NULL,
+        longitude DECIMAL(11, 8) NOT NULL,
+        heading DECIMAL(5, 2) DEFAULT 0,
+        speed DECIMAL(5, 2) DEFAULT 0,
+        accuracy DECIMAL(8, 2) DEFAULT 0,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_timestamp ON driver_locations(timestamp);`);
+    console.log("OK: driver_locations table ensured");
+
     console.log('ðŸ”§ Checking payment_methods setup...');
     
     // ALWAYS check payment_method ENUM first (even if table exists)

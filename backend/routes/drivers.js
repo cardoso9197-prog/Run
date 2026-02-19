@@ -60,9 +60,12 @@ router.get('/debug/status', async (req, res) => {
 router.get('/profile', requireDriver, async (req, res) => {
   try {
     const result = await query(`
-      SELECT d.*, u.phone
+      SELECT d.*,
+             v.make, v.model, v.year, v.color, v.license_plate, v.vehicle_type,
+             u.phone
       FROM drivers d
       JOIN users u ON d.user_id = u.id
+      LEFT JOIN vehicles v ON d.vehicle_id = v.id
       WHERE d.user_id = $1
     `, [req.user.id]);
 
@@ -186,6 +189,20 @@ router.post('/location', requireDriver, async (req, res) => {
     }
 
     const driverId = driverResult.rows[0].id;
+
+    // Ensure table exists (safe migration)
+    await query(`
+      CREATE TABLE IF NOT EXISTS driver_locations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+        latitude DECIMAL(10, 8) NOT NULL,
+        longitude DECIMAL(11, 8) NOT NULL,
+        heading DECIMAL(5, 2) DEFAULT 0,
+        speed DECIMAL(5, 2) DEFAULT 0,
+        accuracy DECIMAL(8, 2) DEFAULT 0,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     await query(`
       INSERT INTO driver_locations (driver_id, latitude, longitude, heading, speed, accuracy)
@@ -472,16 +489,6 @@ router.post('/push-token', requireDriver, async (req, res) => {
       message: error.message,
     });
   }
-});
-
-/**
- * POST /api/drivers/push-token-error
- * Log push token registration errors from app (for debugging)
- */
-router.post('/push-token-error', requireDriver, async (req, res) => {
-  const { error, platform } = req.body;
-  console.error(`❌ PUSH TOKEN ERROR from driver ${req.user.id} on ${platform}: ${error}`);
-  res.json({ received: true });
 });
 
 module.exports = router;
