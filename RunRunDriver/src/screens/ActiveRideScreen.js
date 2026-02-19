@@ -66,10 +66,12 @@ export default function ActiveRideScreen({ route, navigation }) {
       setRide(rideData);
 
       // Set initial map region to show pickup location
-      if (rideData.pickup_lat && rideData.pickup_lon) {
+      const pickupLat = rideData.pickupLocation?.latitude ?? rideData.pickup_lat;
+      const pickupLon = rideData.pickupLocation?.longitude ?? rideData.pickup_lon;
+      if (pickupLat && pickupLon) {
         setMapRegion({
-          latitude: parseFloat(rideData.pickup_lat),
-          longitude: parseFloat(rideData.pickup_lon),
+          latitude: parseFloat(pickupLat),
+          longitude: parseFloat(pickupLon),
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         });
@@ -80,31 +82,31 @@ export default function ActiveRideScreen({ route, navigation }) {
   };
 
   const openNavigation = (destinationLat, destinationLon, destinationName) => {
-    const destination = `${destinationLat},${destinationLon}`;
+    if (!destinationLat || !destinationLon || isNaN(destinationLat) || isNaN(destinationLon)) {
+      Alert.alert('Error', 'Destination coordinates not available');
+      return;
+    }
+
     const label = encodeURIComponent(destinationName || 'Destination');
-    
-    const scheme = Platform.select({
-      ios: 'maps:',
-      android: 'geo:',
-    });
-    
-    const url = Platform.select({
-      ios: `${scheme}?daddr=${destination}&dirflg=d`,
-      android: `${scheme}0,0?q=${destination}(${label})&navigate=yes`,
+    const destination = `${destinationLat},${destinationLon}`;
+
+    // Google Maps navigation URL — works on both iOS and Android
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&destination_place_id=${label}&travelmode=driving`;
+    // Native Google Maps app URL
+    const googleMapsApp = Platform.select({
+      ios: `comgooglemaps://?daddr=${destination}&directionsmode=driving`,
+      android: `google.navigation:q=${destination}&mode=d`,
     });
 
-    // Try opening Google Maps first, fallback to default maps
-    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
-    
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Linking.openURL(googleMapsUrl);
-      }
-    }).catch(() => {
-      Alert.alert('Error', 'Could not open navigation app');
-    });
+    Linking.canOpenURL(googleMapsApp)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(googleMapsApp);
+        } else {
+          return Linking.openURL(googleMapsUrl);
+        }
+      })
+      .catch(() => Linking.openURL(googleMapsUrl));
   };
 
   const handleStart = async () => {
@@ -134,19 +136,23 @@ export default function ActiveRideScreen({ route, navigation }) {
 
   if (!ride) return <View style={styles.container}><Text style={styles.loadingText}>Loading ride details...</Text></View>;
 
+  // Support both camelCase (backend v1.0.4) and snake_case field names
   const pickupCoords = {
-    latitude: parseFloat(ride.pickup_lat),
-    longitude: parseFloat(ride.pickup_lon),
+    latitude: parseFloat(ride.pickupLocation?.latitude ?? ride.pickup_lat ?? 0),
+    longitude: parseFloat(ride.pickupLocation?.longitude ?? ride.pickup_lon ?? 0),
   };
 
   const dropoffCoords = {
-    latitude: parseFloat(ride.dropoff_lat),
-    longitude: parseFloat(ride.dropoff_lon),
+    latitude: parseFloat(ride.dropoffLocation?.latitude ?? ride.dropoff_lat ?? 0),
+    longitude: parseFloat(ride.dropoffLocation?.longitude ?? ride.dropoff_lon ?? 0),
   };
+
+  const pickupAddress = ride.pickupAddress || ride.pickup_address || 'Pickup';
+  const dropoffAddress = ride.dropoffAddress || ride.dropoff_address || 'Dropoff';
 
   // Determine current destination based on ride status
   const currentDestination = ride.status === 'accepted' ? pickupCoords : dropoffCoords;
-  const currentDestinationName = ride.status === 'accepted' ? ride.pickup_address : ride.dropoff_address;
+  const currentDestinationName = ride.status === 'accepted' ? pickupAddress : dropoffAddress;
   const destinationIcon = ride.status === 'accepted' ? '📍' : '🎯';
 
   return (
@@ -164,7 +170,7 @@ export default function ActiveRideScreen({ route, navigation }) {
           <Marker
             coordinate={pickupCoords}
             title="Pickup Location"
-            description={ride.pickup_address}
+            description={pickupAddress}
             pinColor={ride.status === 'accepted' ? '#4CAF50' : '#999'}
           />
           
@@ -172,7 +178,7 @@ export default function ActiveRideScreen({ route, navigation }) {
           <Marker
             coordinate={dropoffCoords}
             title="Dropoff Location"
-            description={ride.dropoff_address}
+            description={dropoffAddress}
             pinColor={ride.status === 'started' ? '#FF6B00' : '#999'}
           />
 
@@ -192,7 +198,7 @@ export default function ActiveRideScreen({ route, navigation }) {
           <Text style={styles.statusBadge}>
             {ride.status === 'accepted' ? '🚗 Heading to Pickup' : '🏁 En Route to Dropoff'}
           </Text>
-          <Text style={styles.fareText}>{Math.round(ride.estimatedFare || ride.fare_estimate || 0).toLocaleString()} XOF</Text>
+          <Text style={styles.fareText}>{Math.round(ride.estimatedFare || ride.fare_estimate || ride.estimated_fare || 0).toLocaleString()} XOF</Text>
         </View>
 
         {/* Current Destination */}
