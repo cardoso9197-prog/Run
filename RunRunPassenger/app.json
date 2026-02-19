@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Run Run Passenger",
-    "slug": "runrun-passenger",
+    "slug": "runrun-passenger-gb",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -46,8 +46,9 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "apiUrl": "https://zippy-healing-production-24e4.up.railway.app",
       "eas": {
-        "projectId": "651cb2ae-ec0f-4709-ad1c-b68dd9f2b813"
+        "projectId": "24957a04-628e-4b50-a63a-9b8f33a68fef"
       }
     },
     "plugins": [
@@ -63,6 +64,7 @@
           }
         }
       ]
-    ]
+    ],
+    "owner": "run_run"
   }
 }
