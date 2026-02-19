@@ -114,15 +114,24 @@ export default function ActiveRideScreen({ route, navigation }) {
   };
 
   const handleCancelRide = () => {
-    Alert.alert('Cancel Ride', 'Are you sure you want to cancel this ride?', [
+    const hasDriver = ride.status === 'accepted' || ride.status === 'arrived';
+    const warningMsg = hasDriver
+      ? 'The driver has already accepted your ride. A cancellation fee of 500 XOF will be charged. Are you sure?'
+      : 'Are you sure you want to cancel this ride?';
+
+    Alert.alert('Cancel Ride', warningMsg, [
       { text: 'No', style: 'cancel' },
       {
-        text: 'Yes',
+        text: hasDriver ? 'Cancel & Pay 500 XOF' : 'Yes, Cancel',
         style: 'destructive',
         onPress: async () => {
           try {
-            await rideAPI.cancelRide(rideId);
-            Alert.alert('Cancelled', 'Ride cancelled successfully', [
+            const response = await rideAPI.cancelRide(rideId);
+            const fee = response.data?.cancellationFee || 0;
+            const msg = fee > 0
+              ? `Ride cancelled. A cancellation fee of ${fee} XOF has been charged.`
+              : 'Ride cancelled successfully.';
+            Alert.alert('Cancelled', msg, [
               { text: 'OK', onPress: () => navigation.navigate('Home') },
             ]);
           } catch (error) {
@@ -135,10 +144,12 @@ export default function ActiveRideScreen({ route, navigation }) {
 
   const getStatusText = (status) => {
     const statusMap = {
-      requested: 'Looking for driver...',
-      accepted: 'Driver on the way',
-      started: 'Trip in progress',
-      completed: 'Trip completed',
+      requested: '🔍 Looking for driver...',
+      accepted: '🚗 Driver is on the way',
+      arrived: '📍 Driver has arrived!',
+      started: '🚀 Trip in progress',
+      completed: '✅ Trip completed',
+      cancelled: '❌ Ride cancelled',
     };
     return statusMap[status] || status;
   };
@@ -147,8 +158,10 @@ export default function ActiveRideScreen({ route, navigation }) {
     const colorMap = {
       requested: '#FFA500',
       accepted: '#4CAF50',
+      arrived: '#FF6B00',
       started: '#2196F3',
       completed: '#9C27B0',
+      cancelled: '#f44336',
     };
     return colorMap[status] || '#666';
   };
@@ -291,9 +304,15 @@ export default function ActiveRideScreen({ route, navigation }) {
         <View style={styles.etaCard}>
           <Text style={styles.etaLabel}>Driver arriving in:</Text>
           <Text style={styles.etaTime}>{calculateETA()} min</Text>
-          <Text style={styles.etaSubtext}>
-            Track your driver in real-time on the map
-          </Text>
+          <Text style={styles.etaSubtext}>Track your driver in real-time on the map</Text>
+        </View>
+      )}
+
+      {/* Arrived banner */}
+      {ride.status === 'arrived' && (
+        <View style={[styles.etaCard, { backgroundColor: '#FF6B00' }]}>
+          <Text style={styles.etaLabel}>🎉 Your driver has arrived!</Text>
+          <Text style={styles.etaSubtext}>Please head to the pickup point</Text>
         </View>
       )}
 
@@ -312,14 +331,20 @@ export default function ActiveRideScreen({ route, navigation }) {
             <View style={styles.driverInfo}>
               <Text style={styles.driverName}>{ride.driver.name}</Text>
               <Text style={styles.driverDetails}>
-                {ride.driver.vehicle_make} {ride.driver.vehicle_model}
+                Vehicle: {ride.vehicle?.vehicleType || 'RunRun'}
               </Text>
-              <Text style={styles.driverDetails}>
-                Plate: {ride.driver.vehicle_plate}
-              </Text>
-              <Text style={styles.driverDetails}>
-                Phone: {ride.driver.phone}
-              </Text>
+              {ride.driver.phone ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    const { Linking } = require('react-native');
+                    Linking.openURL(`tel:${ride.driver.phone}`);
+                  }}
+                >
+                  <Text style={[styles.driverDetails, { color: '#2196F3', textDecorationLine: 'underline' }]}>
+                    📞 {ride.driver.phone}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </>
         )}

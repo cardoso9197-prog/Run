@@ -176,26 +176,6 @@ app.delete('/api/debug/drivers/:userId', async (req, res) => {
   }
 });
 
-// Debug endpoint - manually set push token for a driver (for testing)
-app.post('/api/debug/push-token/:userId', async (req, res) => {
-  try {
-    const userId = parseInt(req.params.userId);
-    const { pushToken, platform } = req.body;
-    if (!pushToken) return res.status(400).json({ error: 'pushToken required' });
-    
-    const result = await pool.query(
-      'UPDATE drivers SET push_token = $1, push_platform = $2, push_token_updated_at = NOW() WHERE user_id = $3 RETURNING id, name, push_token',
-      [pushToken, platform || 'android', userId]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Driver not found' });
-    
-    res.json({ success: true, driver: result.rows[0], message: 'Push token set manually' });
-  } catch (error) {
-    console.error('Set push token error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Debug endpoint - test fare calculation
 app.post('/api/debug/test-fare', async (req, res) => {
   try {
@@ -772,6 +752,10 @@ app.use((req, res) => {
 // Auto-migration: Create payment_methods table if it doesn't exist
 async function ensurePaymentMethodsTable() {
   try {
+    // Ensure cancellation_fee column exists on rides table
+    await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER DEFAULT 0;");
+    console.log("OK: rides.cancellation_fee column ensured");
+
     console.log('ðŸ”§ Checking payment_methods setup...');
     
     // ALWAYS check payment_method ENUM first (even if table exists)

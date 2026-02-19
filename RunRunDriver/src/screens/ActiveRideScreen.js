@@ -18,31 +18,36 @@ export default function ActiveRideScreen({ route, navigation }) {
     // Start location tracking when screen loads
     startLocationTracking();
     
-    // Poll for location updates
-    const locationInterval = setInterval(() => {
-      updateDriverLocation();
-    }, 5000); // Update every 5 seconds
-    
-    // Cleanup: stop tracking when leaving screen
+    // Poll for ride status + cancellations every 5 seconds
+    const statusInterval = setInterval(async () => {
+      try {
+        const response = await rideAPI.getRideDetails(rideId);
+        const updatedRide = response.data;
+        if (updatedRide.status === 'cancelled') {
+          clearInterval(statusInterval);
+          locationService.stopTracking();
+          Alert.alert(
+            '❌ Ride Cancelled',
+            'The passenger has cancelled this ride. You are now available for new rides.',
+            [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
+          );
+          return;
+        }
+        setRide(updatedRide);
+        // Update map region if driver location available
+        const driverLoc = await locationService.getCurrentLocation();
+        if (driverLoc) setDriverLocation(driverLoc);
+      } catch (err) {
+        console.error('Status poll error:', err.message);
+      }
+    }, 5000);
+
+    // Cleanup
     return () => {
       locationService.stopTracking();
-      clearInterval(locationInterval);
+      clearInterval(statusInterval);
     };
   }, []);
-
-  const updateDriverLocation = async () => {
-    try {
-      const location = await locationService.getCurrentLocation();
-      if (location) {
-        setDriverLocation({
-          latitude: location.latitude,
-          longitude: location.longitude,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to get current location:', error);
-    }
-  };
 
   const startLocationTracking = async () => {
     try {

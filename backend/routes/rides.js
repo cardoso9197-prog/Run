@@ -8,7 +8,7 @@ const express = require('express');
 const { pool, query } = require('../database/db');
 const { requirePassenger, requireDriver } = require('../middleware/auth');
 const { calculateFare, calculateDistance } = require('../utils/pricing');
-const { notifyDriversAboutNewRide } = require('../utils/pushNotifications');
+const { notifyDriversAboutNewRide, sendPushNotification } = require('../utils/pushNotifications');
 
 const router = express.Router();
 
@@ -499,25 +499,51 @@ router.put('/:id/cancel', requirePassenger, async (req, res) => {
       });
     }
 
+    // Determine if a cancellation fee applies (500 XOF if driver already accepted)
+    const CANCELLATION_FEE = 500;
+    const chargesFee = ['accepted', 'arrived'].includes(ride.status);
+
     // Update ride status
     await query(`
       UPDATE rides
       SET status = $1,
-          cancelled_at = NOW()
-      WHERE id = $2
-    `, ['cancelled', id]);
+          cancelled_at = NOW(),
+          cancellation_reason = $2,
+          cancellation_fee = $3
+      WHERE id = $4
+    `, ['cancelled', reason, chargesFee ? CANCELLATION_FEE : 0, id]);
 
-    // If driver was assigned, update driver status
+    // If driver was assigned, update driver status and notify them
     if (ride.driver_id) {
       await query(
         'UPDATE drivers SET status = $1 WHERE id = $2',
         ['online', ride.driver_id]
       );
+
+      // Push notification to driver
+      try {
+        const driverTokenResult = await query(
+          'SELECT push_token, push_platform FROM drivers WHERE id = $1 AND push_token IS NOT NULL',
+          [ride.driver_id]
+        );
+        if (driverTokenResult.rows.length > 0) {
+          const { push_token } = driverTokenResult.rows[0];
+          const feeMsg = chargesFee ? ` Passenger charged ${CANCELLATION_FEE} XOF cancellation fee.` : '';
+          await notifyDriversAboutNewRide(
+            { id, estimated_fare: 0, distanceToPickup: 0 },
+            [{ push_token, _overrideTitle: '❌ Ride Cancelled', _overrideBody: `Passenger cancelled the ride.${feeMsg}` }]
+          );
+        }
+      } catch (notifErr) {
+        console.error('Failed to notify driver of cancellation:', notifErr);
+      }
     }
 
     res.json({
       success: true,
       message: 'Ride cancelled successfully',
+      cancellationFee: chargesFee ? CANCELLATION_FEE : 0,
+      charged: chargesFee,
     });
   } catch (error) {
     console.error('Cancel ride error:', error);
@@ -1544,6 +1570,28 @@ router.get('/:id', async (req, res) => {
 
     const ride = rideResult.rows[0];
 
+    // Fetch driver's current location from driver_locations table
+    let driverCurrentLocation = null;
+    if (ride.driver_id) {
+      const locResult = await query(
+        'SELECT latitude, longitude, heading, speed FROM driver_locations WHERE driver_id = $1 ORDER BY timestamp DESC LIMIT 1',
+        [ride.driver_id]
+      );
+      if (locResult.rows.length > 0) {
+        driverCurrentLocation = locResult.rows[0];
+      }
+      // Fallback to current_latitude on drivers table
+      if (!driverCurrentLocation) {
+        const driverLocFallback = await query(
+          'SELECT current_latitude as latitude, current_longitude as longitude FROM drivers WHERE id = $1',
+          [ride.driver_id]
+        );
+        if (driverLocFallback.rows.length > 0 && driverLocFallback.rows[0].latitude) {
+          driverCurrentLocation = driverLocFallback.rows[0];
+        }
+      }
+    }
+
     // Build response
     const rideData = {
       id: ride.id,
@@ -1565,6 +1613,7 @@ router.get('/:id', async (req, res) => {
       finalFare: ride.final_fare ? parseFloat(ride.final_fare) : null,
       requestedAt: ride.requested_at,
       acceptedAt: ride.accepted_at,
+      arrivedAt: ride.arrived_at,
       startedAt: ride.started_at,
       completedAt: ride.completed_at,
       passenger: {
@@ -1582,6 +1631,7 @@ router.get('/:id', async (req, res) => {
         photo: ride.driver_photo,
         rating: parseFloat(ride.driver_rating) || 0,
         phone: ride.driver_phone,
+        currentLocation: driverCurrentLocation,
       };
       rideData.vehicle = {
         vehicleType: ride.vehicle_type_name || ride.vehicle_type || 'RunRun',
