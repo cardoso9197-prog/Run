@@ -503,6 +503,11 @@ router.put('/:id/cancel', requirePassenger, async (req, res) => {
     const CANCELLATION_FEE = 500;
     const chargesFee = ['accepted', 'arrived'].includes(ride.status);
 
+    // Ensure required columns exist (safe migrations)
+    await query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`);
+    await query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`);
+    await query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER DEFAULT 0`);
+
     // Update ride status
     await query(`
       UPDATE rides
