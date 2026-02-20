@@ -197,6 +197,35 @@ export default function ActiveRideScreen({ route, navigation }) {
     );
   };
 
+  const handleCancel = () => {
+    Alert.alert(
+      '❌ Cancel Ride?',
+      'Are you sure you want to cancel this ride? Only cancel if absolutely necessary.',
+      [
+        { text: 'No, Continue', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await rideAPI.cancelRide(rideId, 'Driver cancelled');
+              locationService.stopTracking();
+              Alert.alert('Ride Cancelled', 'The ride has been cancelled and the passenger notified.', [
+                { text: 'OK', onPress: () => navigation.navigate('Home') },
+              ]);
+            } catch (error) {
+              console.error('Cancel error:', error.response?.data || error.message);
+              Alert.alert('Error', error.response?.data?.error || 'Failed to cancel ride. Try again.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (!ride) {
     return (
       <View style={styles.loadingContainer}>
@@ -323,6 +352,17 @@ export default function ActiveRideScreen({ route, navigation }) {
             )}
           </TouchableOpacity>
         )}
+
+        {/* Cancel button — only for accepted/arrived (not after trip started) */}
+        {(ride.status === 'accepted' || ride.status === 'arrived') && (
+          <TouchableOpacity
+            style={[styles.cancelButton, actionLoading && styles.disabledButton]}
+            onPress={handleCancel}
+            disabled={actionLoading}
+          >
+            <Text style={styles.cancelButtonText}>❌ Cancel Ride</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -364,4 +404,9 @@ const styles = StyleSheet.create({
   completeButton: { backgroundColor: '#4CAF50' },
   disabledButton: { opacity: 0.6 },
   actionButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  cancelButton: {
+    backgroundColor: '#FFF', padding: 14, borderRadius: 12, alignItems: 'center',
+    marginTop: 10, borderWidth: 2, borderColor: '#F44336',
+  },
+  cancelButtonText: { color: '#F44336', fontSize: 16, fontWeight: 'bold' },
 });

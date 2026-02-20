@@ -1,0 +1,8 @@
+node_modules
+.env
+*.md
+*.sql
+*.bat
+*.ps1
+runrun.db
+deploy_output.txt

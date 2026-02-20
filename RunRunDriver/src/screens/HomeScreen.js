@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { driverAPI } from '../services/api';
 import notificationService from '../services/notificationService';
@@ -10,6 +11,7 @@ export default function HomeScreen({ navigation }) {
   const [driverName, setDriverName] = useState('');
   const [isOnline, setIsOnline] = useState(false);
   const [todayEarnings, setTodayEarnings] = useState(0);
+  const [checkingRide, setCheckingRide] = useState(false);
 
   useEffect(() => {
     loadDriverData();
@@ -20,6 +22,29 @@ export default function HomeScreen({ navigation }) {
       })
       .catch(err => console.log('Push setup error:', err));
   }, []);
+
+  // Check for active ride EVERY time driver returns to this screen
+  useFocusEffect(
+    useCallback(() => {
+      checkActiveRide();
+    }, [])
+  );
+
+  const checkActiveRide = async () => {
+    setCheckingRide(true);
+    try {
+      const response = await driverAPI.getActiveRide();
+      const ride = response.data?.ride || null;
+      if (ride && ride.id) {
+        // Active ride found — navigate straight to it
+        navigation.navigate('ActiveRide', { rideId: ride.id });
+      }
+    } catch (error) {
+      // No active ride or network error — stay on Home
+    } finally {
+      setCheckingRide(false);
+    }
+  };
 
   const loadDriverData = async () => {
     try {
@@ -106,6 +131,13 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
+      {checkingRide && (
+        <View style={styles.checkingCard}>
+          <ActivityIndicator size="small" color="#FFF" />
+          <Text style={styles.checkingText}>Checking for active ride...</Text>
+        </View>
+      )}
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>💰 {t('today')}'s Earnings</Text>
         <Text style={styles.earningsAmount}>{todayEarnings} XOF</Text>
@@ -166,6 +198,11 @@ const styles = StyleSheet.create({
   statusOnline: { backgroundColor: '#4CAF50' },
   statusOffline: { backgroundColor: '#666' },
   statusText: { color: '#FFF', fontWeight: 'bold' },
+  checkingCard: {
+    backgroundColor: '#888', margin: 15, padding: 15, borderRadius: 15,
+    flexDirection: 'row', alignItems: 'center',
+  },
+  checkingText: { color: '#FFF', fontSize: 15, marginLeft: 10 },
   card: { backgroundColor: '#FFF', margin: 15, padding: 20, borderRadius: 15 },
   cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   earningsAmount: { fontSize: 36, fontWeight: 'bold', color: '#4CAF50' },

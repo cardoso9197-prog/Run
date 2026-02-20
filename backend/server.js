@@ -752,48 +752,6 @@ app.use((req, res) => {
 // Auto-migration: Create payment_methods table if it doesn't exist
 async function ensurePaymentMethodsTable() {
   try {
-    // Ensure cancellation_fee column exists on rides table
-    await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER DEFAULT 0;");
-    console.log("OK: rides.cancellation_fee column ensured");
-
-    // Ensure all required driver columns exist
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS push_token TEXT;");
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS push_platform VARCHAR(20);");
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS push_token_updated_at TIMESTAMP;");
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS is_activated BOOLEAN DEFAULT false;");
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(50) DEFAULT 'Normal';");
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_latitude DECIMAL(10,8);");
-    await pool.query("ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_longitude DECIMAL(11,8);");
-    await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP;");
-    await pool.query("ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;");
-    console.log("OK: driver columns ensured");
-
-    // Cancel stale 'requested' rides older than 30 minutes (passenger forgot to cancel)
-    const staleResult = await pool.query(`
-      UPDATE rides SET status = 'cancelled', cancellation_reason = 'Auto-cancelled: no driver accepted within 30 minutes', cancelled_at = NOW()
-      WHERE status = 'requested' AND requested_at < NOW() - INTERVAL '30 minutes'
-    `);
-    if (staleResult.rowCount > 0) {
-      console.log(`🧹 Auto-cancelled ${staleResult.rowCount} stale requested rides`);
-    }
-
-    // Ensure driver_locations table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS driver_locations (
-        id SERIAL PRIMARY KEY,
-        driver_id INTEGER NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
-        latitude DECIMAL(10, 8) NOT NULL,
-        longitude DECIMAL(11, 8) NOT NULL,
-        heading DECIMAL(5, 2) DEFAULT 0,
-        speed DECIMAL(5, 2) DEFAULT 0,
-        accuracy DECIMAL(8, 2) DEFAULT 0,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_timestamp ON driver_locations(timestamp);`);
-    console.log("OK: driver_locations table ensured");
-
     console.log('ðŸ”§ Checking payment_methods setup...');
     
     // ALWAYS check payment_method ENUM first (even if table exists)

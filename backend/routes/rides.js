@@ -457,6 +457,77 @@ router.get('/active', requirePassenger, async (req, res) => {
 });
 
 /**
+ * PUT /api/rides/:id/driver-cancel
+ * Driver cancels an accepted/arrived ride
+ */
+router.put('/:id/driver-cancel', requireDriver, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason = 'Driver cancelled' } = req.body;
+
+    const driverResult = await query(
+      'SELECT id FROM drivers WHERE user_id = $1',
+      [req.user.id]
+    );
+    if (driverResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Driver profile not found' });
+    }
+    const driverId = driverResult.rows[0].id;
+
+    const rideResult = await query(
+      'SELECT * FROM rides WHERE id = $1 AND driver_id = $2',
+      [id, driverId]
+    );
+    if (rideResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Ride not found or not assigned to you' });
+    }
+
+    const ride = rideResult.rows[0];
+    if (!['accepted', 'arrived'].includes(ride.status)) {
+      return res.status(400).json({
+        error: 'Cannot cancel ride in current status. Only accepted or arrived rides can be cancelled by driver.',
+        status: ride.status,
+      });
+    }
+
+    // Cancel the ride and reset driver to online
+    await query(
+      `UPDATE rides SET status = 'cancelled', cancelled_at = NOW(), cancellation_reason = $1, updated_at = NOW() WHERE id = $2`,
+      [reason, id]
+    );
+    await query(
+      'UPDATE drivers SET status = $1 WHERE id = $2',
+      ['online', driverId]
+    );
+
+    // Notify passenger
+    try {
+      const passengerTokenResult = await query(`
+        SELECT u.push_token, u.push_platform
+        FROM rides r
+        JOIN passengers p ON r.passenger_id = p.id
+        JOIN users u ON p.user_id = u.id
+        WHERE r.id = $1 AND u.push_token IS NOT NULL
+      `, [id]);
+      if (passengerTokenResult.rows.length > 0) {
+        const { push_token } = passengerTokenResult.rows[0];
+        await sendPushNotification(push_token, '❌ Ride Cancelled', 'Your driver had to cancel. Please book again.');
+      }
+    } catch (notifErr) {
+      console.error('Failed to notify passenger of driver cancellation:', notifErr);
+    }
+
+    res.json({
+      success: true,
+      message: 'Ride cancelled successfully',
+    });
+  } catch (error) {
+    console.error('Driver cancel ride error:', error);
+    res.status(500).json({ error: 'Failed to cancel ride', message: error.message });
+  }
+});
+
+/**
  * PUT /api/rides/:id/cancel
  * Cancel a ride (Passenger)
  */

@@ -68,6 +68,8 @@ export const driverAPI = {
   acceptRide: (rideId) => api.put(`/rides/${rideId}/accept`),
   getEarnings: () => api.get('/drivers/earnings'),
   updateVehicle: (data) => api.put('/drivers/vehicle', data),
+  // Active ride check — used on HomeScreen focus to resume in-progress trips
+  getActiveRide: () => api.get('/rides/driver/active'),
   // Withdrawal APIs
   getWithdrawalBalance: () => api.get('/withdrawals/balance'),
   getWithdrawalSettings: () => api.get('/withdrawals/settings'),
@@ -83,7 +85,7 @@ export const rideAPI = {
   arrivedAtPickup: (id) => api.put(`/rides/${id}/status`, { status: 'arrived' }),
   startRide: (id) => api.put(`/rides/${id}/start`),
   completeRide: (id) => api.put(`/rides/${id}/complete`),
-  cancelRide: (id) => api.put(`/rides/${id}/cancel`),
+  cancelRide: (id, reason) => api.put(`/rides/${id}/driver-cancel`, { reason }),
 };
 
 export default api;
