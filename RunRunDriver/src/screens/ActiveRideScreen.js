@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, Platform, ActivityIndicator } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
 import { rideAPI } from '../services/api';
@@ -11,56 +11,47 @@ export default function ActiveRideScreen({ route, navigation }) {
   const [ride, setRide] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
   const [mapRegion, setMapRegion] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     loadRide();
-    
-    // Start location tracking when screen loads
     startLocationTracking();
-    
-    // Poll for ride status + cancellations every 5 seconds
-    const statusInterval = setInterval(async () => {
-      try {
-        const response = await rideAPI.getRideDetails(rideId);
-        const updatedRide = response.data;
-        if (updatedRide.status === 'cancelled') {
-          clearInterval(statusInterval);
-          locationService.stopTracking();
-          Alert.alert(
-            '❌ Ride Cancelled',
-            'The passenger has cancelled this ride. You are now available for new rides.',
-            [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
-          );
-          return;
-        }
-        setRide(updatedRide);
-        // Update map region if driver location available
-        const driverLoc = await locationService.getCurrentLocation();
-        if (driverLoc) setDriverLocation(driverLoc);
-      } catch (err) {
-        console.error('Status poll error:', err.message);
-      }
+
+    const locationInterval = setInterval(() => {
+      updateDriverLocation();
     }, 5000);
 
-    // Cleanup
+    // Poll ride status every 10 seconds
+    const rideInterval = setInterval(() => {
+      loadRide();
+    }, 10000);
+
     return () => {
       locationService.stopTracking();
-      clearInterval(statusInterval);
+      clearInterval(locationInterval);
+      clearInterval(rideInterval);
     };
   }, []);
+
+  const updateDriverLocation = async () => {
+    try {
+      const location = await locationService.getCurrentLocation();
+      if (location) {
+        setDriverLocation({
+          latitude: location.latitude,
+          longitude: location.longitude,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to get current location:', error);
+    }
+  };
 
   const startLocationTracking = async () => {
     try {
       await locationService.startTracking();
-      console.log('Location tracking started for active ride');
     } catch (error) {
       console.error('Failed to start location tracking:', error);
-      // Don't block the ride if location fails
-      Alert.alert(
-        'Location Access',
-        'Unable to access your location. Please enable location services for better experience.',
-        [{ text: 'OK' }]
-      );
     }
   };
 
@@ -70,19 +61,43 @@ export default function ActiveRideScreen({ route, navigation }) {
       const rideData = response.data;
       setRide(rideData);
 
-      // Set initial map region to show pickup location
       const pickupLat = rideData.pickupLocation?.latitude ?? rideData.pickup_lat;
       const pickupLon = rideData.pickupLocation?.longitude ?? rideData.pickup_lon;
+      const dropoffLat = rideData.dropoffLocation?.latitude ?? rideData.dropoff_lat;
+      const dropoffLon = rideData.dropoffLocation?.longitude ?? rideData.dropoff_lon;
+
       if (pickupLat && pickupLon) {
-        setMapRegion({
-          latitude: parseFloat(pickupLat),
-          longitude: parseFloat(pickupLon),
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        });
+        if (rideData.status === 'started' && dropoffLat && dropoffLon) {
+          // Show dropoff when trip started
+          setMapRegion({
+            latitude: parseFloat(dropoffLat),
+            longitude: parseFloat(dropoffLon),
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          });
+        } else {
+          setMapRegion({
+            latitude: parseFloat(pickupLat),
+            longitude: parseFloat(pickupLon),
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          });
+        }
+      }
+
+      // If ride completed or cancelled, navigate back
+      if (rideData.status === 'completed' || rideData.status === 'cancelled') {
+        locationService.stopTracking();
+        Alert.alert(
+          rideData.status === 'completed' ? '✅ Trip Completed!' : '❌ Ride Cancelled',
+          rideData.status === 'completed'
+            ? `Trip completed. Earnings: ${Math.round((rideData.finalFare || rideData.estimatedFare || 0) * 0.8).toLocaleString()} XOF`
+            : 'The ride has been cancelled.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
+        );
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error loading ride:', error);
     }
   };
 
@@ -91,78 +106,130 @@ export default function ActiveRideScreen({ route, navigation }) {
       Alert.alert('Error', 'Destination coordinates not available');
       return;
     }
-
     const label = encodeURIComponent(destinationName || 'Destination');
     const destination = `${destinationLat},${destinationLon}`;
-
-    // Google Maps navigation URL — works on both iOS and Android
-    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&destination_place_id=${label}&travelmode=driving`;
-    // Native Google Maps app URL
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
     const googleMapsApp = Platform.select({
       ios: `comgooglemaps://?daddr=${destination}&directionsmode=driving`,
       android: `google.navigation:q=${destination}&mode=d`,
     });
-
     Linking.canOpenURL(googleMapsApp)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(googleMapsApp);
-        } else {
-          return Linking.openURL(googleMapsUrl);
-        }
-      })
+      .then((supported) => Linking.openURL(supported ? googleMapsApp : googleMapsUrl))
       .catch(() => Linking.openURL(googleMapsUrl));
   };
 
+  const handleArrived = async () => {
+    Alert.alert(
+      '📍 Arrived at Pickup?',
+      'Confirm you have arrived at the pickup location. The passenger will be notified.',
+      [
+        { text: 'Not Yet', style: 'cancel' },
+        {
+          text: 'Yes, I Arrived',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await rideAPI.arrivedAtPickup(rideId);
+              await loadRide();
+              Alert.alert('✅ Passenger Notified', 'The passenger has been notified that you arrived!');
+            } catch (error) {
+              console.error('Arrived error:', error.response?.data || error.message);
+              Alert.alert('Error', error.response?.data?.error || 'Failed to update status. Try again.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleStart = async () => {
-    try {
-      await rideAPI.startRide(rideId);
-      loadRide();
-      Alert.alert('Success', 'Trip started!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to start trip');
-    }
+    Alert.alert(
+      '🚀 Start Trip?',
+      'Confirm the passenger is in the vehicle and start the trip.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start Trip',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await rideAPI.startRide(rideId);
+              await loadRide();
+            } catch (error) {
+              console.error('Start error:', error.response?.data || error.message);
+              Alert.alert('Error', error.response?.data?.error || 'Failed to start trip. Try again.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleComplete = async () => {
-    try {
-      await rideAPI.completeRide(rideId);
-      
-      // Stop location tracking when ride completes
-      locationService.stopTracking();
-      
-      Alert.alert('Success', 'Trip completed!', [
-        { text: 'OK', onPress: () => navigation.navigate('Home') },
-      ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to complete trip');
-    }
+    Alert.alert(
+      '🏁 Complete Trip?',
+      'Confirm you have reached the dropoff location.',
+      [
+        { text: 'Not Yet', style: 'cancel' },
+        {
+          text: 'Complete Trip',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await rideAPI.completeRide(rideId);
+              locationService.stopTracking();
+              Alert.alert('✅ Trip Completed!', 'Great job! Your earnings have been recorded.', [
+                { text: 'OK', onPress: () => navigation.navigate('Home') },
+              ]);
+            } catch (error) {
+              console.error('Complete error:', error.response?.data || error.message);
+              Alert.alert('Error', error.response?.data?.error || 'Failed to complete trip. Try again.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
-  if (!ride) return <View style={styles.container}><Text style={styles.loadingText}>Loading ride details...</Text></View>;
+  if (!ride) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B00" />
+        <Text style={styles.loadingText}>Loading ride details...</Text>
+      </View>
+    );
+  }
 
-  // Support both camelCase (backend v1.0.4) and snake_case field names
   const pickupCoords = {
     latitude: parseFloat(ride.pickupLocation?.latitude ?? ride.pickup_lat ?? 0),
     longitude: parseFloat(ride.pickupLocation?.longitude ?? ride.pickup_lon ?? 0),
   };
-
   const dropoffCoords = {
     latitude: parseFloat(ride.dropoffLocation?.latitude ?? ride.dropoff_lat ?? 0),
     longitude: parseFloat(ride.dropoffLocation?.longitude ?? ride.dropoff_lon ?? 0),
   };
-
   const pickupAddress = ride.pickupAddress || ride.pickup_address || 'Pickup';
   const dropoffAddress = ride.dropoffAddress || ride.dropoff_address || 'Dropoff';
 
-  // Determine current destination based on ride status
-  const currentDestination = ride.status === 'accepted' ? pickupCoords : dropoffCoords;
-  const currentDestinationName = ride.status === 'accepted' ? pickupAddress : dropoffAddress;
-  const destinationIcon = ride.status === 'accepted' ? '📍' : '🎯';
+  // Current destination depends on status
+  const isHeadingToPickup = ride.status === 'accepted' || ride.status === 'arrived';
+  const currentDestination = isHeadingToPickup ? pickupCoords : dropoffCoords;
+  const currentDestinationName = isHeadingToPickup ? pickupAddress : dropoffAddress;
+
+  const statusLabels = {
+    accepted: '🚗 Heading to Pickup',
+    arrived: '📍 Arrived at Pickup',
+    started: '🏁 En Route to Dropoff',
+  };
 
   return (
     <View style={styles.container}>
-      {/* Map View */}
       {mapRegion && (
         <MapView
           style={styles.map}
@@ -171,69 +238,89 @@ export default function ActiveRideScreen({ route, navigation }) {
           showsMyLocationButton={true}
           provider={PROVIDER_GOOGLE}
         >
-          {/* Pickup Marker */}
-          <Marker
-            coordinate={pickupCoords}
-            title="Pickup Location"
-            description={pickupAddress}
-            pinColor={ride.status === 'accepted' ? '#4CAF50' : '#999'}
-          />
-          
-          {/* Dropoff Marker */}
-          <Marker
-            coordinate={dropoffCoords}
-            title="Dropoff Location"
-            description={dropoffAddress}
-            pinColor={ride.status === 'started' ? '#FF6B00' : '#999'}
-          />
-
-          {/* Route line between pickup and dropoff */}
+          <Marker coordinate={pickupCoords} title="Pickup" description={pickupAddress} pinColor={ride.status === 'started' ? '#999' : '#4CAF50'} />
+          <Marker coordinate={dropoffCoords} title="Dropoff" description={dropoffAddress} pinColor={ride.status === 'started' ? '#FF6B00' : '#999'} />
           <Polyline
             coordinates={[pickupCoords, dropoffCoords]}
-            strokeColor="#FF6B00"
+            strokeColor={ride.status === 'started' ? '#FF6B00' : '#2196F3'}
             strokeWidth={3}
             lineDashPattern={[1, 10]}
           />
         </MapView>
       )}
 
-      {/* Ride Details Card */}
       <View style={styles.detailsCard}>
         <View style={styles.header}>
-          <Text style={styles.statusBadge}>
-            {ride.status === 'accepted' ? '🚗 Heading to Pickup' : '🏁 En Route to Dropoff'}
-          </Text>
+          <Text style={styles.statusBadge}>{statusLabels[ride.status] || ride.status}</Text>
           <Text style={styles.fareText}>{Math.round(ride.estimatedFare || ride.fare_estimate || ride.estimated_fare || 0).toLocaleString()} XOF</Text>
         </View>
 
-        {/* Current Destination */}
+        {/* Passenger info */}
+        {ride.passenger && (
+          <View style={styles.passengerRow}>
+            <Text style={styles.passengerLabel}>👤 Passenger:</Text>
+            <Text style={styles.passengerName}>{ride.passenger.name}</Text>
+          </View>
+        )}
+
         <View style={styles.destinationSection}>
           <Text style={styles.destinationLabel}>
-            {destinationIcon} {ride.status === 'accepted' ? 'Pickup Location' : 'Dropoff Location'}
+            {isHeadingToPickup ? '📍 Pickup Location' : '🎯 Dropoff Location'}
           </Text>
           <Text style={styles.destinationText} numberOfLines={2}>{currentDestinationName}</Text>
         </View>
 
-        {/* Navigate Button */}
         <TouchableOpacity
           style={styles.navigateButton}
           onPress={() => openNavigation(currentDestination.latitude, currentDestination.longitude, currentDestinationName)}
         >
           <Text style={styles.navigateButtonText}>
-            🧭 Navigate {ride.status === 'accepted' ? 'to Pickup' : 'to Dropoff'}
+            🧭 Navigate {isHeadingToPickup ? 'to Pickup' : 'to Dropoff'}
           </Text>
         </TouchableOpacity>
 
-        {/* Action Buttons */}
+        {/* STEP 1: Accepted → Mark Arrived */}
         {ride.status === 'accepted' && (
-          <TouchableOpacity style={styles.actionButton} onPress={handleStart}>
-            <Text style={styles.actionButtonText}>✅ {t('startTrip')}</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.arrivedButton, actionLoading && styles.disabledButton]}
+            onPress={handleArrived}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.actionButtonText}>📍 I've Arrived at Pickup</Text>
+            )}
           </TouchableOpacity>
         )}
-        
+
+        {/* STEP 2: Arrived → Start Trip */}
+        {ride.status === 'arrived' && (
+          <TouchableOpacity
+            style={[styles.actionButton, actionLoading && styles.disabledButton]}
+            onPress={handleStart}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.actionButtonText}>✅ {t('startTrip')}</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* STEP 3: Started → Complete Trip */}
         {ride.status === 'started' && (
-          <TouchableOpacity style={[styles.actionButton, styles.completeButton]} onPress={handleComplete}>
-            <Text style={styles.actionButtonText}>🏁 {t('completeTrip')}</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.completeButton, actionLoading && styles.disabledButton]}
+            onPress={handleComplete}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.actionButtonText}>🏁 {t('completeTrip')}</Text>
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -242,19 +329,10 @@ export default function ActiveRideScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  map: {
-    flex: 1,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 50,
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  map: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 15 },
   detailsCard: {
     position: 'absolute',
     bottom: 0,
@@ -270,63 +348,20 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 10,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  statusBadge: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6B00',
-  },
-  fareText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  destinationSection: {
-    backgroundColor: '#F9F9F9',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-  destinationLabel: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  destinationText: {
-    fontSize: 15,
-    color: '#333',
-    fontWeight: '500',
-  },
-  navigateButton: {
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  navigateButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  actionButton: {
-    backgroundColor: '#FF6B00',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  completeButton: {
-    backgroundColor: '#4CAF50',
-  },
-  actionButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  statusBadge: { fontSize: 15, fontWeight: 'bold', color: '#FF6B00', flex: 1, flexWrap: 'wrap' },
+  fareText: { fontSize: 20, fontWeight: 'bold', color: '#4CAF50' },
+  passengerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  passengerLabel: { fontSize: 13, color: '#666', marginRight: 6 },
+  passengerName: { fontSize: 14, fontWeight: '700', color: '#333' },
+  destinationSection: { backgroundColor: '#F9F9F9', padding: 12, borderRadius: 12, marginBottom: 12 },
+  destinationLabel: { fontSize: 13, color: '#666', fontWeight: '600', marginBottom: 4 },
+  destinationText: { fontSize: 15, color: '#333', fontWeight: '500' },
+  navigateButton: { backgroundColor: '#2196F3', padding: 14, borderRadius: 12, alignItems: 'center', marginBottom: 10 },
+  navigateButtonText: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+  actionButton: { backgroundColor: '#FF6B00', padding: 18, borderRadius: 12, alignItems: 'center' },
+  arrivedButton: { backgroundColor: '#9C27B0' },
+  completeButton: { backgroundColor: '#4CAF50' },
+  disabledButton: { opacity: 0.6 },
+  actionButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
 });

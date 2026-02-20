@@ -503,11 +503,6 @@ router.put('/:id/cancel', requirePassenger, async (req, res) => {
     const CANCELLATION_FEE = 500;
     const chargesFee = ['accepted', 'arrived'].includes(ride.status);
 
-    // Ensure required columns exist (safe migrations)
-    await query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`);
-    await query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`);
-    await query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER DEFAULT 0`);
-
     // Update ride status
     await query(`
       UPDATE rides
@@ -773,7 +768,7 @@ router.post('/:id/rate', requirePassenger, async (req, res) => {
  */
 router.get('/driver/available', requireDriver, async (req, res) => {
   try {
-    const { latitude, longitude, radius = 50 } = req.query;
+    const { latitude, longitude, radius = 5 } = req.query;
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -792,7 +787,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
       });
     }
 
-    // Find nearby ride requests — no vehicle type filter, large radius for small country
+    // Find nearby ride requests — no vehicle type filter (all drivers see all rides)
     const ridesResult = await query(`
       SELECT * FROM (
         SELECT r.*,
@@ -807,7 +802,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
         JOIN passengers p ON r.passenger_id = p.id
         JOIN users u ON p.user_id = u.id
         WHERE r.status = 'requested'
-          AND r.requested_at > NOW() - INTERVAL '30 minutes'
+          AND r.requested_at > NOW() - INTERVAL '10 minutes'
       ) AS nearby_rides
       WHERE pickup_distance_km <= $3
       ORDER BY pickup_distance_km ASC, requested_at ASC
@@ -1090,6 +1085,49 @@ router.put('/:id/status', requireDriver, async (req, res) => {
       );
     }
 
+    // Send push notification to passenger for key status changes
+    try {
+      const passengerTokenResult = await query(
+        `SELECT u.push_token FROM passengers p
+         JOIN users u ON p.user_id = u.id
+         WHERE p.id = $1 AND u.push_token IS NOT NULL`,
+        [ride.passenger_id]
+      );
+
+      if (passengerTokenResult.rows.length > 0) {
+        const passengerToken = passengerTokenResult.rows[0].push_token;
+
+        if (status === 'arrived') {
+          await sendPushNotification(
+            passengerToken,
+            '🚗 Driver Arrived!',
+            'Your driver has arrived at the pickup location. Please come out!',
+            { type: 'driver_arrived', rideId: id }
+          );
+          console.log(`✅ Notified passenger: driver arrived for ride ${id}`);
+        } else if (status === 'started') {
+          await sendPushNotification(
+            passengerToken,
+            '🏁 Trip Started!',
+            'Your trip is now in progress. Enjoy the ride!',
+            { type: 'trip_started', rideId: id }
+          );
+          console.log(`✅ Notified passenger: trip started for ride ${id}`);
+        } else if (status === 'completed') {
+          await sendPushNotification(
+            passengerToken,
+            '✅ Trip Completed!',
+            `Your trip is complete. Total fare: ${Math.round(ride.final_fare || ride.estimated_fare || 0).toLocaleString()} XOF`,
+            { type: 'trip_completed', rideId: id }
+          );
+          console.log(`✅ Notified passenger: trip completed for ride ${id}`);
+        }
+      }
+    } catch (notifyErr) {
+      console.error('Failed to send passenger notification:', notifyErr.message);
+      // Non-fatal — don't fail the status update
+    }
+
     res.json({
       success: true,
       message: `Ride status updated to ${status}`,
@@ -1101,6 +1139,132 @@ router.put('/:id/status', requireDriver, async (req, res) => {
       error: 'Failed to update ride status',
       message: error.message,
     });
+  }
+});
+
+/**
+ * PUT /api/rides/:id/arrived
+ * Driver marks arrival at pickup (convenience alias for status=arrived)
+ */
+router.put('/:id/arrived', requireDriver, async (req, res) => {
+  req.body.status = 'arrived';
+  return router.handle(Object.assign(req, { url: `/${req.params.id}/status`, method: 'PUT' }), res, () => {});
+});
+
+/**
+ * PUT /api/rides/:id/start
+ * Start a ride (convenience alias for status=started)
+ */
+router.put('/:id/start', requireDriver, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const driverResult = await query('SELECT id FROM drivers WHERE user_id = $1', [req.user.id]);
+    if (driverResult.rows.length === 0) return res.status(404).json({ error: 'Driver profile not found' });
+    const driverId = driverResult.rows[0].id;
+
+    const rideResult = await query('SELECT * FROM rides WHERE id = $1 AND driver_id = $2', [id, driverId]);
+    if (rideResult.rows.length === 0) return res.status(404).json({ error: 'Ride not found' });
+
+    const ride = rideResult.rows[0];
+    if (!['accepted', 'arrived'].includes(ride.status)) {
+      return res.status(400).json({ error: 'Ride must be accepted or arrived to start', currentStatus: ride.status });
+    }
+
+    await query('UPDATE rides SET status = $1, started_at = NOW() WHERE id = $2', ['started', id]);
+
+    // Notify passenger
+    try {
+      const passengerTokenResult = await query(
+        `SELECT u.push_token FROM passengers p JOIN users u ON p.user_id = u.id WHERE p.id = $1 AND u.push_token IS NOT NULL`,
+        [ride.passenger_id]
+      );
+      if (passengerTokenResult.rows.length > 0) {
+        await sendPushNotification(
+          passengerTokenResult.rows[0].push_token,
+          '🏁 Trip Started!',
+          'Your trip is now in progress. Enjoy the ride!',
+          { type: 'trip_started', rideId: id }
+        );
+      }
+    } catch (e) { console.error('Notify error:', e.message); }
+
+    res.json({ success: true, message: 'Ride started', status: 'started' });
+  } catch (error) {
+    console.error('Start ride error:', error);
+    res.status(500).json({ error: 'Failed to start ride', message: error.message });
+  }
+});
+
+/**
+ * PUT /api/rides/:id/complete
+ * Complete a ride (convenience alias for status=completed)
+ */
+router.put('/:id/complete', requireDriver, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { actualDistance, actualDuration } = req.body;
+
+    const driverResult = await query('SELECT id FROM drivers WHERE user_id = $1', [req.user.id]);
+    if (driverResult.rows.length === 0) return res.status(404).json({ error: 'Driver profile not found' });
+    const driverId = driverResult.rows[0].id;
+
+    const rideResult = await query('SELECT * FROM rides WHERE id = $1 AND driver_id = $2', [id, driverId]);
+    if (rideResult.rows.length === 0) return res.status(404).json({ error: 'Ride not found' });
+
+    const ride = rideResult.rows[0];
+    if (ride.status !== 'started') {
+      return res.status(400).json({ error: 'Ride must be started to complete', currentStatus: ride.status });
+    }
+
+    let updateQuery = 'UPDATE rides SET status = $1, completed_at = NOW(), final_fare = estimated_fare';
+    const params = ['completed'];
+    let paramIndex = 2;
+
+    if (actualDistance && actualDuration) {
+      const fareDetails = await calculateFare(actualDistance, actualDuration, ride.vehicle_type);
+      updateQuery += `, actual_distance_km = $${paramIndex}, actual_duration_minutes = $${paramIndex + 1}, final_fare = $${paramIndex + 2}`;
+      params.push(actualDistance, actualDuration, fareDetails.totalFare);
+      paramIndex += 3;
+    }
+
+    updateQuery += ` WHERE id = $${paramIndex}`;
+    params.push(id);
+    await query(updateQuery, params);
+
+    await query('UPDATE drivers SET status = $1, total_rides = total_rides + 1 WHERE id = $2', ['online', driverId]);
+
+    const updatedRide = await query('SELECT * FROM rides WHERE id = $1', [id]);
+    const finalFare = parseFloat(updatedRide.rows[0].final_fare);
+    const platformCommission = finalFare * 0.20;
+    const driverEarnings = finalFare - platformCommission;
+
+    await query(`INSERT INTO payments (ride_id, passenger_id, driver_id, amount, payment_method, status, platform_commission, driver_earnings)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, ride.passenger_id, driverId, finalFare, 'cash', 'pending', platformCommission, driverEarnings]);
+
+    await query('UPDATE drivers SET total_earnings = total_earnings + $1 WHERE id = $2', [driverEarnings, driverId]);
+
+    // Notify passenger
+    try {
+      const passengerTokenResult = await query(
+        `SELECT u.push_token FROM passengers p JOIN users u ON p.user_id = u.id WHERE p.id = $1 AND u.push_token IS NOT NULL`,
+        [ride.passenger_id]
+      );
+      if (passengerTokenResult.rows.length > 0) {
+        await sendPushNotification(
+          passengerTokenResult.rows[0].push_token,
+          '✅ Trip Completed!',
+          `Your trip is complete. Total fare: ${Math.round(finalFare).toLocaleString()} XOF`,
+          { type: 'trip_completed', rideId: id }
+        );
+      }
+    } catch (e) { console.error('Notify error:', e.message); }
+
+    res.json({ success: true, message: 'Ride completed', status: 'completed', finalFare });
+  } catch (error) {
+    console.error('Complete ride error:', error);
+    res.status(500).json({ error: 'Failed to complete ride', message: error.message });
   }
 });
 

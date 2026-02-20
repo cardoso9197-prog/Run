@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
@@ -18,160 +19,139 @@ export default function ActiveRideScreen({ route, navigation }) {
   const [ride, setRide] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [prevStatus, setPrevStatus] = useState(null);
   const mapRef = useRef(null);
+  const arrivedAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    console.log('ActiveRideScreen mounted with rideId:', rideId);
     loadRideDetails();
     const interval = setInterval(loadRideDetails, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
   }, []);
 
-  // Update map region when driver location changes
+  // Fit map when driver location or status changes
   useEffect(() => {
-    if (ride?.driver?.currentLocation && mapRef.current && ride.status === 'accepted') {
-      updateMapRegion();
+    if (ride && mapRef.current) {
+      fitMapToRide();
     }
-  }, [ride?.driver?.currentLocation]);
+  }, [ride?.driver?.currentLocation, ride?.status]);
+
+  // Show arrived banner animation when driver arrives
+  useEffect(() => {
+    if (ride?.status === 'arrived' && prevStatus === 'accepted') {
+      Animated.sequence([
+        Animated.timing(arrivedAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.delay(8000),
+        Animated.timing(arrivedAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start();
+    }
+    if (ride?.status) setPrevStatus(ride.status);
+  }, [ride?.status]);
+
+  const fitMapToRide = () => {
+    if (!mapRef.current) return;
+    const coords = [];
+
+    if (ride.pickupLocation) coords.push(ride.pickupLocation);
+    if (ride.dropoffLocation) coords.push(ride.dropoffLocation);
+    if (ride.driver?.currentLocation?.latitude) {
+      coords.push({
+        latitude: parseFloat(ride.driver.currentLocation.latitude),
+        longitude: parseFloat(ride.driver.currentLocation.longitude),
+      });
+    }
+
+    if (coords.length >= 2) {
+      mapRef.current.fitToCoordinates(coords, {
+        edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+        animated: true,
+      });
+    }
+  };
 
   const loadRideDetails = async () => {
     try {
-      console.log('Loading ride details for:', rideId);
       const response = await rideAPI.getRideDetails(rideId);
-      console.log('Ride details received:', response.data);
-      setRide(response.data);
+      const rideData = response.data;
+      setRide(rideData);
       setError(null);
-    } catch (error) {
-      console.error('Error loading ride:', error);
-      console.error('Error response:', error.response?.data);
-      
-      // Better error messages
-      let errorMessage = 'Failed to load ride details';
-      
-      if (error.response?.status === 404) {
-        errorMessage = 'No driver available yet. Please wait...';
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+
+      // Auto-navigate when completed
+      if (rideData.status === 'completed') {
+        navigation.replace('TripDetails', { rideId: rideData.id });
       }
-      
+    } catch (err) {
+      console.error('Error loading ride:', err);
+      let errorMessage = 'Failed to load ride details';
+      if (err.response?.status === 404) {
+        errorMessage = 'Ride not found. It may have been cancelled.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateMapRegion = () => {
-    if (!ride?.driver?.currentLocation || !ride?.pickupLocation) return;
-
-    const driverLoc = ride.driver.currentLocation;
-    const pickupLoc = ride.pickupLocation;
-
-    mapRef.current.fitToCoordinates([
-      { latitude: driverLoc.latitude, longitude: driverLoc.longitude },
-      { latitude: pickupLoc.latitude, longitude: pickupLoc.longitude },
-    ], {
-      edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-      animated: true,
-    });
-  };
-
-  // Calculate distance using Haversine formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth radius in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
-  // Calculate ETA in minutes
   const calculateETA = () => {
-    if (!ride?.driver?.currentLocation || !ride?.pickupLocation) return null;
-
-    const driverLoc = ride.driver.currentLocation;
-    const pickupLoc = ride.pickupLocation;
-
-    const distance = calculateDistance(
-      driverLoc.latitude,
-      driverLoc.longitude,
-      pickupLoc.latitude,
-      pickupLoc.longitude
+    if (!ride?.driver?.currentLocation?.latitude || !ride?.pickupLocation) return null;
+    const d = calculateDistance(
+      parseFloat(ride.driver.currentLocation.latitude),
+      parseFloat(ride.driver.currentLocation.longitude),
+      ride.pickupLocation.latitude,
+      ride.pickupLocation.longitude
     );
-
-    // Average speed in Bissau: ~20 km/h (accounting for traffic)
-    const averageSpeed = 20;
-    const etaHours = distance / averageSpeed;
-    const etaMinutes = Math.ceil(etaHours * 60);
-
-    // Minimum 1 minute ETA
-    return Math.max(1, etaMinutes);
+    return Math.max(1, Math.ceil((d / 20) * 60));
   };
 
   const handleCancelRide = () => {
-    const hasDriver = ride.status === 'accepted' || ride.status === 'arrived';
-    const warningMsg = hasDriver
-      ? 'The driver has already accepted your ride. A cancellation fee of 500 XOF will be charged. Are you sure?'
-      : 'Are you sure you want to cancel this ride?';
-
-    Alert.alert('Cancel Ride', warningMsg, [
+    Alert.alert('Cancel Ride', 'Are you sure you want to cancel this ride?', [
       { text: 'No', style: 'cancel' },
       {
-        text: hasDriver ? 'Cancel & Pay 500 XOF' : 'Yes, Cancel',
+        text: 'Yes, Cancel',
         style: 'destructive',
         onPress: async () => {
           try {
-            const response = await rideAPI.cancelRide(rideId);
-            const fee = response.data?.cancellationFee || 0;
-            const msg = fee > 0
-              ? `Ride cancelled. A cancellation fee of ${fee} XOF has been charged.`
-              : 'Ride cancelled successfully.';
-            Alert.alert('Cancelled', msg, [
+            await rideAPI.cancelRide(rideId);
+            Alert.alert('Cancelled', 'Ride cancelled successfully', [
               { text: 'OK', onPress: () => navigation.navigate('Home') },
             ]);
           } catch (error) {
-            Alert.alert('Error', 'Failed to cancel ride');
+            Alert.alert('Error', error.response?.data?.error || 'Failed to cancel ride');
           }
         },
       },
     ]);
   };
 
-  const getStatusText = (status) => {
-    const statusMap = {
-      requested: '🔍 Looking for driver...',
-      accepted: '🚗 Driver is on the way',
-      arrived: '📍 Driver has arrived!',
-      started: '🚀 Trip in progress',
-      completed: '✅ Trip completed',
-      cancelled: '❌ Ride cancelled',
+  const getStatusInfo = (status) => {
+    const map = {
+      requested:  { text: '🔍 Looking for driver...', color: '#FFA500' },
+      accepted:   { text: '🚗 Driver on the way',     color: '#2196F3' },
+      arrived:    { text: '📍 Driver has arrived!',   color: '#9C27B0' },
+      started:    { text: '🏁 Trip in progress',      color: '#4CAF50' },
+      completed:  { text: '✅ Trip completed',        color: '#9C27B0' },
     };
-    return statusMap[status] || status;
-  };
-
-  const getStatusColor = (status) => {
-    const colorMap = {
-      requested: '#FFA500',
-      accepted: '#4CAF50',
-      arrived: '#FF6B00',
-      started: '#2196F3',
-      completed: '#9C27B0',
-      cancelled: '#f44336',
-    };
-    return colorMap[status] || '#666';
+    return map[status] || { text: status, color: '#666' };
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B00" />
-        <Text style={styles.loadingText}>🔍 Looking for your ride...</Text>
-        <Text style={styles.loadingSubtext}>Please wait while we load the details</Text>
+        <Text style={styles.loadingText}>🔍 Loading your ride...</Text>
       </View>
     );
   }
@@ -180,22 +160,11 @@ export default function ActiveRideScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>⚠️ {error}</Text>
-        <Text style={styles.loadingSubtext}>Unable to load ride details</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => {
-            setError(null);
-            setLoading(true);
-            loadRideDetails();
-          }}
-        >
-          <Text style={styles.backButtonText}>Retry</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => { setError(null); setLoading(true); loadRideDetails(); }}>
+          <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.backButton, { marginTop: 10, backgroundColor: '#666' }]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Go Back</Text>
+        <TouchableOpacity style={[styles.retryButton, { marginTop: 10, backgroundColor: '#666' }]} onPress={() => navigation.goBack()}>
+          <Text style={styles.retryButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -205,30 +174,34 @@ export default function ActiveRideScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>⚠️ Ride not found</Text>
-        <Text style={styles.loadingSubtext}>This ride may have been cancelled or does not exist</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Go Back</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.retryButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  return (
-    <ScrollView style={styles.container}>
-      <View
-        style={[
-          styles.statusCard,
-          { backgroundColor: getStatusColor(ride.status) },
-        ]}
-      >
-        <Text style={styles.statusText}>{getStatusText(ride.status)}</Text>
-      </View>
+  const statusInfo = getStatusInfo(ride.status);
+  const hasDriverLocation = ride.driver?.currentLocation?.latitude != null;
+  const driverCoords = hasDriverLocation ? {
+    latitude: parseFloat(ride.driver.currentLocation.latitude),
+    longitude: parseFloat(ride.driver.currentLocation.longitude),
+  } : null;
 
-      {/* Map View */}
-      {ride.pickupLocation && ride.dropoffLocation && (
+  // Show driver tracking on map for accepted/arrived/started
+  const showDriverOnMap = hasDriverLocation && ['accepted', 'arrived', 'started'].includes(ride.status);
+
+  // Route line: driver→pickup when on the way; pickup→dropoff when started
+  const routeCoords = ride.status === 'started'
+    ? [ride.pickupLocation, ride.dropoffLocation]
+    : (driverCoords && ride.pickupLocation ? [driverCoords, ride.pickupLocation] : []);
+
+  const eta = calculateETA();
+
+  return (
+    <View style={styles.container}>
+      {/* Map */}
+      {ride.pickupLocation && (
         <MapView
           ref={mapRef}
           style={styles.map}
@@ -240,160 +213,212 @@ export default function ActiveRideScreen({ route, navigation }) {
           }}
         >
           {/* Pickup Marker */}
-          <Marker
-            coordinate={ride.pickupLocation}
-            pinColor="green"
-            title="Pickup"
-            description={ride.pickupAddress}
-          />
+          <Marker coordinate={ride.pickupLocation} pinColor="green" title="Pickup" description={ride.pickupAddress} />
 
           {/* Dropoff Marker */}
-          <Marker
-            coordinate={ride.dropoffLocation}
-            pinColor="red"
-            title="Dropoff"
-            description={ride.dropoffAddress}
-          />
-
-          {/* Driver Location & Route (when driver is on the way) */}
-          {ride.driver?.currentLocation && ride.status === 'accepted' && (
-            <>
-              <Marker
-                coordinate={{
-                  latitude: ride.driver.currentLocation.latitude,
-                  longitude: ride.driver.currentLocation.longitude,
-                }}
-                pinColor="blue"
-                title="Driver"
-                description={ride.driver.name}
-              >
-                <View style={styles.driverMarker}>
-                  <Text style={styles.driverMarkerText}>🚗</Text>
-                </View>
-              </Marker>
-
-              {/* Route line from driver to pickup */}
-              <Polyline
-                coordinates={[
-                  {
-                    latitude: ride.driver.currentLocation.latitude,
-                    longitude: ride.driver.currentLocation.longitude,
-                  },
-                  ride.pickupLocation,
-                ]}
-                strokeColor="#2196F3"
-                strokeWidth={3}
-                lineDashPattern={[5, 5]}
-              />
-            </>
+          {ride.dropoffLocation && (
+            <Marker coordinate={ride.dropoffLocation} pinColor="red" title="Dropoff" description={ride.dropoffAddress} />
           )}
 
-          {/* Trip route (when trip started) */}
-          {ride.status === 'started' && (
+          {/* Driver Marker — shown for accepted / arrived / started */}
+          {showDriverOnMap && (
+            <Marker coordinate={driverCoords} title="Your Driver" description={ride.driver.name}>
+              <View style={[styles.driverMarker, ride.status === 'arrived' && styles.driverMarkerArrived]}>
+                <Text style={styles.driverMarkerText}>🚗</Text>
+              </View>
+            </Marker>
+          )}
+
+          {/* Route line */}
+          {routeCoords.length >= 2 && (
             <Polyline
-              coordinates={[ride.pickupLocation, ride.dropoffLocation]}
-              strokeColor="#4CAF50"
+              coordinates={routeCoords}
+              strokeColor={ride.status === 'started' ? '#4CAF50' : '#2196F3'}
               strokeWidth={3}
+              lineDashPattern={ride.status === 'started' ? undefined : [5, 5]}
             />
           )}
         </MapView>
       )}
 
-      {/* ETA Display (when driver is on the way) */}
-      {ride.driver?.currentLocation && ride.status === 'accepted' && (
-        <View style={styles.etaCard}>
-          <Text style={styles.etaLabel}>Driver arriving in:</Text>
-          <Text style={styles.etaTime}>{calculateETA()} min</Text>
-          <Text style={styles.etaSubtext}>Track your driver in real-time on the map</Text>
-        </View>
-      )}
+      {/* Driver Arrived Banner (animated) */}
+      <Animated.View
+        style={[
+          styles.arrivedBanner,
+          {
+            opacity: arrivedAnim,
+            transform: [{ translateY: arrivedAnim.interpolate({ inputRange: [0, 1], outputRange: [-80, 0] }) }],
+          },
+        ]}
+      >
+        <Text style={styles.arrivedBannerText}>🚗 Your driver has arrived!</Text>
+        <Text style={styles.arrivedBannerSub}>Please come out to the pickup point</Text>
+      </Animated.View>
 
-      {/* Arrived banner */}
-      {ride.status === 'arrived' && (
-        <View style={[styles.etaCard, { backgroundColor: '#FF6B00' }]}>
-          <Text style={styles.etaLabel}>🎉 Your driver has arrived!</Text>
-          <Text style={styles.etaSubtext}>Please head to the pickup point</Text>
-        </View>
-      )}
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>📍 Route</Text>
-        <View style={styles.routeContainer}>
-          <Text style={styles.locationLabel}>From:</Text>
-          <Text style={styles.locationText}>{ride.pickupAddress}</Text>
-          <Text style={styles.locationLabel}>To:</Text>
-          <Text style={styles.locationText}>{ride.dropoffAddress}</Text>
+      {/* Bottom info card */}
+      <ScrollView style={styles.bottomSheet} showsVerticalScrollIndicator={false}>
+        {/* Status bar */}
+        <View style={[styles.statusCard, { backgroundColor: statusInfo.color }]}>
+          <Text style={styles.statusText}>{statusInfo.text}</Text>
         </View>
 
-        {ride.driver && (
-          <>
-            <Text style={styles.sectionTitle}>👤 Driver Info</Text>
-            <View style={styles.driverInfo}>
-              <Text style={styles.driverName}>{ride.driver.name}</Text>
-              <Text style={styles.driverDetails}>
-                Vehicle: {ride.vehicle?.vehicleType || 'RunRun'}
-              </Text>
-              {ride.driver.phone ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    const { Linking } = require('react-native');
-                    Linking.openURL(`tel:${ride.driver.phone}`);
-                  }}
-                >
-                  <Text style={[styles.driverDetails, { color: '#2196F3', textDecorationLine: 'underline' }]}>
-                    📞 {ride.driver.phone}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          </>
+        {/* ETA card — only when driver is on the way */}
+        {ride.status === 'accepted' && eta && (
+          <View style={styles.etaCard}>
+            <Text style={styles.etaLabel}>Driver arriving in</Text>
+            <Text style={styles.etaTime}>{eta} min</Text>
+            <Text style={styles.etaSubtext}>Live tracking active</Text>
+          </View>
         )}
 
-        <View style={styles.fareSection}>
-          <Text style={styles.fareLabel}>{t('fare')}</Text>
-          <Text style={styles.fareAmount}>
-            {ride.finalFare || ride.estimatedFare || ride.final_fare || ride.fare_estimate || 0} XOF
-          </Text>
+        {/* Arrived static banner in card */}
+        {ride.status === 'arrived' && (
+          <View style={styles.arrivedCard}>
+            <Text style={styles.arrivedCardTitle}>🚗 Driver Arrived!</Text>
+            <Text style={styles.arrivedCardSub}>Your driver is waiting at the pickup point</Text>
+          </View>
+        )}
+
+        {/* Started info */}
+        {ride.status === 'started' && (
+          <View style={styles.startedCard}>
+            <Text style={styles.startedCardTitle}>🏁 Trip in Progress</Text>
+            <Text style={styles.startedCardSub}>You're on your way to {ride.dropoffAddress}</Text>
+          </View>
+        )}
+
+        <View style={styles.card}>
+          {/* Route */}
+          <Text style={styles.sectionTitle}>📍 Route</Text>
+          <View style={styles.routeContainer}>
+            <Text style={styles.locationLabel}>From:</Text>
+            <Text style={styles.locationText}>{ride.pickupAddress}</Text>
+            <Text style={styles.locationLabel}>To:</Text>
+            <Text style={styles.locationText}>{ride.dropoffAddress}</Text>
+          </View>
+
+          {/* Driver Info */}
+          {ride.driver && (
+            <>
+              <Text style={styles.sectionTitle}>👤 Driver</Text>
+              <View style={styles.driverInfo}>
+                <Text style={styles.driverName}>{ride.driver.name}</Text>
+                {ride.vehicle?.vehicleType && (
+                  <Text style={styles.driverDetails}>🚗 {ride.vehicle.vehicleType}</Text>
+                )}
+                <Text style={styles.driverDetails}>📞 {ride.driver.phone}</Text>
+              </View>
+            </>
+          )}
+
+          {/* Fare */}
+          <View style={styles.fareSection}>
+            <Text style={styles.fareLabel}>Estimated Fare</Text>
+            <Text style={styles.fareAmount}>
+              {Math.round(ride.finalFare || ride.estimatedFare || 0).toLocaleString()} XOF
+            </Text>
+          </View>
+
+          {/* Cancel button — only for requested/accepted/arrived */}
+          {['requested', 'accepted', 'arrived'].includes(ride.status) && (
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelRide}>
+              <Text style={styles.cancelButtonText}>{t('cancelRide')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Rate button when completed */}
+          {ride.status === 'completed' && (
+            <TouchableOpacity
+              style={styles.rateButton}
+              onPress={() => navigation.navigate('TripDetails', { rideId: ride.id })}
+            >
+              <Text style={styles.rateButtonText}>{t('rateDriver')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
-
-        {ride.status !== 'completed' && ride.status !== 'cancelled' && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={handleCancelRide}
-          >
-            <Text style={styles.cancelButtonText}>{t('cancelRide')}</Text>
-          </TouchableOpacity>
-        )}
-
-        {ride.status === 'completed' && (
-          <TouchableOpacity
-            style={styles.rateButton}
-            onPress={() =>
-              navigation.navigate('TripDetails', { rideId: ride.id })
-            }
-          >
-            <Text style={styles.rateButtonText}>{t('rateDriver')}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  map: { height: 320, width: '100%' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5', padding: 20 },
+  loadingText: { marginTop: 20, fontSize: 18, fontWeight: '600', color: '#333', textAlign: 'center' },
+  errorText: { fontSize: 18, color: '#d32f2f', textAlign: 'center', marginBottom: 20 },
+  retryButton: { backgroundColor: '#FF6B00', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 8 },
+  retryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  // Map markers
+  driverMarker: {
+    backgroundColor: '#2196F3',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
-  statusCard: {
-    padding: 20,
+  driverMarkerArrived: { backgroundColor: '#9C27B0' },
+  driverMarkerText: { fontSize: 20 },
+
+  // Animated arrived banner (top of screen)
+  arrivedBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#9C27B0',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 20,
+  },
+  arrivedBannerText: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  arrivedBannerSub: { color: '#FFF', fontSize: 13, marginTop: 4, opacity: 0.9 },
+
+  bottomSheet: { flex: 1 },
+  statusCard: { padding: 16, alignItems: 'center' },
+  statusText: { fontSize: 20, fontWeight: 'bold', color: '#FFF' },
+
+  etaCard: {
+    backgroundColor: '#2196F3',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    margin: 15,
+    marginBottom: 0,
+  },
+  etaLabel: { color: '#FFF', fontSize: 13, fontWeight: '500', marginBottom: 4 },
+  etaTime: { color: '#FFF', fontSize: 36, fontWeight: 'bold' },
+  etaSubtext: { color: '#FFF', fontSize: 12, marginTop: 4, opacity: 0.9 },
+
+  arrivedCard: {
+    backgroundColor: '#9C27B0',
+    margin: 15,
+    marginBottom: 0,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
-  statusText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFF',
+  arrivedCardTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  arrivedCardSub: { color: '#FFF', fontSize: 13, marginTop: 4, opacity: 0.9, textAlign: 'center' },
+
+  startedCard: {
+    backgroundColor: '#4CAF50',
+    margin: 15,
+    marginBottom: 0,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
   },
+  startedCardTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  startedCardSub: { color: '#FFF', fontSize: 13, marginTop: 4, opacity: 0.9, textAlign: 'center' },
+
   card: {
     backgroundColor: '#FFF',
     margin: 15,
@@ -405,162 +430,18 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 10,
-    color: '#000',
-  },
-  routeContainer: {
-    backgroundColor: '#F9F9F9',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  locationLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 10,
-  },
-  locationText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 5,
-  },
-  driverInfo: {
-    backgroundColor: '#F9F9F9',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  driverName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 10,
-  },
-  driverDetails: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 5,
-  },
-  fareSection: {
-    backgroundColor: '#FF6B00',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginVertical: 15,
-  },
-  fareLabel: {
-    fontSize: 16,
-    color: '#000',
-    marginBottom: 5,
-  },
-  fareAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  cancelButton: {
-    backgroundColor: '#FF5252',
-    padding: 18,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  rateButton: {
-    backgroundColor: '#4CAF50',
-    padding: 18,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  rateButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  map: {
-    width: '100%',
-    height: 300,
-    marginBottom: 20,
-    borderRadius: 12,
-  },
-  etaCard: {
-    backgroundColor: '#2196F3',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 15,
-    marginHorizontal: 20,
-  },
-  etaLabel: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 5,
-  },
-  etaTime: {
-    color: '#FFF',
-    fontSize: 36,
-    fontWeight: 'bold',
-  },
-  etaSubtext: {
-    color: '#FFF',
-    fontSize: 12,
-    marginTop: 5,
-    opacity: 0.9,
-  },
-  driverMarker: {
-    backgroundColor: '#2196F3',
-    padding: 8,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#FFF',
-  },
-  driverMarkerText: {
-    fontSize: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
-  loadingSubtext: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#d32f2f',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    backgroundColor: '#FF6B00',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  sectionTitle: { fontSize: 17, fontWeight: 'bold', marginTop: 12, marginBottom: 8, color: '#000' },
+  routeContainer: { backgroundColor: '#F9F9F9', padding: 14, borderRadius: 10, marginBottom: 12 },
+  locationLabel: { fontSize: 13, color: '#666', marginTop: 8 },
+  locationText: { fontSize: 15, fontWeight: '600', color: '#000', marginBottom: 4 },
+  driverInfo: { backgroundColor: '#F9F9F9', padding: 14, borderRadius: 10, marginBottom: 12 },
+  driverName: { fontSize: 18, fontWeight: 'bold', color: '#000', marginBottom: 6 },
+  driverDetails: { fontSize: 15, color: '#666', marginBottom: 4 },
+  fareSection: { backgroundColor: '#FF6B00', padding: 18, borderRadius: 10, alignItems: 'center', marginVertical: 12 },
+  fareLabel: { fontSize: 15, color: '#FFF', marginBottom: 4 },
+  fareAmount: { fontSize: 30, fontWeight: 'bold', color: '#FFF' },
+  cancelButton: { backgroundColor: '#FF5252', padding: 16, borderRadius: 10, alignItems: 'center' },
+  cancelButtonText: { color: '#FFF', fontSize: 17, fontWeight: 'bold' },
+  rateButton: { backgroundColor: '#4CAF50', padding: 16, borderRadius: 10, alignItems: 'center' },
+  rateButtonText: { color: '#FFF', fontSize: 17, fontWeight: 'bold' },
 });

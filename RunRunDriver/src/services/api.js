@@ -80,6 +80,7 @@ export const driverAPI = {
 export const rideAPI = {
   getRides: () => api.get('/rides'),
   getRideDetails: (id) => api.get(`/rides/${id}`),
+  arrivedAtPickup: (id) => api.put(`/rides/${id}/status`, { status: 'arrived' }),
   startRide: (id) => api.put(`/rides/${id}/start`),
   completeRide: (id) => api.put(`/rides/${id}/complete`),
   cancelRide: (id) => api.put(`/rides/${id}/cancel`),
