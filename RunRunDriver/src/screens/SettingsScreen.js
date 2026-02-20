@@ -33,22 +33,17 @@ export default function SettingsScreen() {
         <View style={styles.aboutContainer}>
           <View style={styles.aboutRow}>
             <Text style={styles.aboutLabel}>{t('appVersion')}:</Text>
-            <Text style={styles.aboutValue}>1.0.1</Text>
+            <Text style={styles.aboutValue}>1.0.0</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.aboutRow}>
+            <Text style={styles.aboutLabel}>{t('company')}:</Text>
+            <Text style={styles.aboutValue}>Kcdigital, sarl</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
             <Text style={styles.aboutLabel}>{t('developer')}:</Text>
             <Text style={styles.aboutValue}>Edivaldo Cardoso</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('founderTitle')}:</Text>
-            <Text style={styles.aboutValue}>Edivaldo Cardoso</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('company')}:</Text>
-            <Text style={styles.aboutValue}>Run-Run Guiné-Bissau</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
