@@ -54,9 +54,9 @@ export default function BookRideScreen({ navigation, route }) {
   }, [route.params]);
 
   const vehicleTypes = [
-    { type: 'Moto', perKm: 150, icon: '🏍️' },
-    { type: 'Normal', perKm: 338, icon: '🚗' },
-    { type: 'Premium', perKm: 650, icon: '🚙' },
+    { type: 'Moto',    minimumFare: 500,  baseFare: 350,  perKm: 150, includedKm: 1.0, icon: '🏍️' },
+    { type: 'Normal',  minimumFare: 1200, baseFare: 800,  perKm: 338, includedKm: 1.0, icon: '🚗' },
+    { type: 'Premium', minimumFare: 2000, baseFare: 1300, perKm: 650, includedKm: 1.0, icon: '🚙' },
   ];
 
   // ===== LOCAL AIRPORT DETECTION (Haversine formula) =====
@@ -426,6 +426,8 @@ export default function BookRideScreen({ navigation, route }) {
             >
               <Text style={styles.vehicleIcon}>{vehicle.icon}</Text>
               <Text style={styles.vehicleText}>{t(vehicle.type.toLowerCase())}</Text>
+              <Text style={styles.vehicleMin}>Min: {vehicle.minimumFare} XOF</Text>
+              <Text style={styles.vehicleRate}>{vehicle.perKm} XOF/km</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -450,10 +452,16 @@ export default function BookRideScreen({ navigation, route }) {
                   <Text style={styles.fareLabel}>Distance:</Text>
                   <Text style={styles.fareValue}>{fareDetails?.distance?.toFixed(1) || 0} km</Text>
                 </View>
+                {fareDetails?.isAirportFlatRate ? null : (
+                  <View style={styles.fareRow}>
+                    <Text style={styles.fareLabel}>Rate:</Text>
+                    <Text style={styles.fareValue}>{fareDetails?.perKmRate} XOF/km</Text>
+                  </View>
+                )}
                 <View style={styles.fareDivider} />
                 <View style={styles.fareRow}>
                   <Text style={styles.fareLabelTotal}>Estimated Total:</Text>
-                  <Text style={styles.fareValueTotal}>{estimatedFare} XOF</Text>
+                  <Text style={styles.fareValueTotal}>{estimatedFare.toLocaleString()} XOF</Text>
                 </View>
               </View>
             ) : (
@@ -712,7 +720,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 3,
+    marginBottom: 2,
+  },
+  vehicleMin: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FF6B00',
+    marginBottom: 1,
+  },
+  vehicleRate: {
+    fontSize: 10,
+    color: '#888',
   },
   vehiclePrice: {
     fontSize: 12,

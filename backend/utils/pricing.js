@@ -85,32 +85,44 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     console.log('⚠️ MISSING COORDINATES:', { pickupLat, pickupLon, dropoffLat, dropoffLon });
   }
   
-  // NEW PRICING: Per km rates for each vehicle type
-  const perKmRates = {
-    Moto: 150,      // 150 XOF/km
-    Normal: 338,    // 338 XOF/km
-    Premium: 650,   // 650 XOF/km (increased by 100 XOF)
+  // ─── PRICING CONFIG ───────────────────────────────────────────────────────
+  //  Each vehicle type has:
+  //    minimumFare  – charged even for very short trips
+  //    baseFare     – fixed flag-fall on every ride
+  //    perKmRate    – charged per km AFTER the included base km
+  //    includedKm   – km already covered by the baseFare (no extra charge)
+  //
+  //  Formula (normal ride):
+  //    fare = baseFare + max(0, distanceKm - includedKm) * perKmRate
+  //    fare = max(fare, minimumFare)
+  //    fare = rounded to nearest 50 XOF
+  // ──────────────────────────────────────────────────────────────────────────
+  const PRICING = {
+    Moto:    { minimumFare: 500,  baseFare: 350, perKmRate: 150, includedKm: 1.0 },
+    Normal:  { minimumFare: 1200, baseFare: 800, perKmRate: 338, includedKm: 1.0 },
+    Premium: { minimumFare: 2000, baseFare: 1300, perKmRate: 650, includedKm: 1.0 },
   };
-  
-  const perKmRate = perKmRates[vehicleType] || perKmRates.Normal;
-  
+
+  const config = PRICING[vehicleType] || PRICING.Normal;
+  const perKmRate = config.perKmRate;
+
   // Airport inside terminal flat rate (to/from any zone in Bissau)
   const AIRPORT_FLAT_RATE = 5600; // 5600 XOF fixed price
-  
+
   let totalFare = 0;
   let baseFare = 0;
   let distanceFare = 0;
   let isAirportFlatRate = false;
-  
+
   console.log('💰 FARE CALCULATION:', {
     distanceKm,
     vehicleType,
-    perKmRate,
+    config,
     isAirportTrip,
     isAirportInside,
     airportDetected
   });
-  
+
   // If airport trip with inside terminal selected, use flat rate
   if (isAirportTrip) {
     totalFare = AIRPORT_FLAT_RATE;
@@ -119,14 +131,25 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     isAirportFlatRate = true;
     console.log('✈️ APPLYING AIRPORT FLAT RATE:', AIRPORT_FLAT_RATE, 'XOF');
   } else {
-    // Normal pricing: distance * per km rate
-    baseFare = 0;
-    distanceFare = distanceKm * perKmRate;
-    totalFare = distanceFare;
-    console.log('🚗 APPLYING NORMAL PRICING:', { distanceFare, totalFare });
+    // Normal pricing:
+    //   baseFare covers the first `includedKm`
+    //   extra km charged at perKmRate
+    const extraKm = Math.max(0, distanceKm - config.includedKm);
+    baseFare    = config.baseFare;
+    distanceFare = extraKm * perKmRate;
+    totalFare   = baseFare + distanceFare;
+
+    // Apply minimum fare
+    if (totalFare < config.minimumFare) {
+      totalFare = config.minimumFare;
+    }
+
+    console.log('🚗 APPLYING NORMAL PRICING:', {
+      baseFare, extraKm, distanceFare, totalFare,
+      minimumApplied: (baseFare + distanceFare) < config.minimumFare
+    });
   }
 
-  
   // No surge pricing - keep fares simple and predictable
   const surgeFare = 0;
 
@@ -136,7 +159,7 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
   const fareResult = {
     baseFare: Math.round(baseFare),
     distanceFare: Math.round(distanceFare),
-    durationFare: 0, // No longer using duration-based pricing
+    durationFare: 0,
     surgeFare: Math.round(surgeFare),
     totalFare: Math.round(totalFare),
     surgeMultiplier,
@@ -144,6 +167,7 @@ async function calculateFare(distanceKm, durationMinutes, vehicleType, surgeMult
     isAirportFlatRate,
     airportDetected,
     perKmRate,
+    minimumFare: (PRICING[vehicleType] || PRICING.Normal).minimumFare,
   };
   
   console.log('📤 RETURNING FARE:', fareResult);
