@@ -88,17 +88,21 @@ async function sendBatchPushNotifications(messages) {
  * @param {array} nearbyDrivers - Array of driver objects with push_token
  */
 async function notifyDriversAboutNewRide(ride, nearbyDrivers) {
+  const vehicleIcon = ride.vehicle_type === 'Moto' ? '🏍️' : ride.vehicle_type === 'Premium' ? '🚙' : '🚗';
+  const vehicleLabel = ride.vehicle_type || 'Normal';
+
   const messages = nearbyDrivers
     .filter(driver => driver.push_token)
     .map(driver => ({
       pushToken: driver.push_token,
-      title: driver._overrideTitle || '🚗 New Ride Request!',
+      title: driver._overrideTitle || `${vehicleIcon} New ${vehicleLabel} Ride Request!`,
       body: driver._overrideBody || `${Math.round(ride.estimated_fare || 0).toLocaleString()} XOF • ${(ride.distanceToPickup || 0).toFixed(1)} km away`,
       data: {
         type: driver._overrideTitle ? 'ride_cancelled' : 'new_ride',
         rideId: ride.id,
         fare: ride.estimated_fare,
         distance: ride.distanceToPickup,
+        vehicleType: ride.vehicle_type,
         pickupAddress: ride.pickup_address,
         dropoffAddress: ride.dropoff_address,
       },

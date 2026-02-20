@@ -87,7 +87,11 @@ export default function AvailableRidesScreen({ navigation }) {
     }
   };
 
-  const renderRide = ({ item }) => (
+  const renderRide = ({ item }) => {
+    const vehicleIcon = item.vehicleType === 'Moto' ? '🏍️' : item.vehicleType === 'Premium' ? '🚙' : '🚗';
+    const vehicleLabel = item.vehicleType || 'Normal';
+
+    return (
     <View style={styles.rideCard}>
       <View style={styles.rideHeader}>
         <Text style={styles.rideFare}>{Math.round(item.estimatedFare || 0).toLocaleString()} XOF</Text>
@@ -95,6 +99,17 @@ export default function AvailableRidesScreen({ navigation }) {
           <Text style={styles.rideDistance}>{item.distanceToPickup.toFixed(1)} km away</Text>
         )}
       </View>
+
+      {/* Vehicle type badge */}
+      <View style={[
+        styles.vehicleBadge,
+        item.vehicleType === 'Moto'    && styles.vehicleBadgeMoto,
+        item.vehicleType === 'Premium' && styles.vehicleBadgePremium,
+        item.vehicleType === 'Normal'  && styles.vehicleBadgeNormal,
+      ]}>
+        <Text style={styles.vehicleBadgeText}>{vehicleIcon} {vehicleLabel}</Text>
+      </View>
+
       <View style={styles.locationRow}>
         <Text style={styles.locationDot}>🟢</Text>
         <Text style={styles.rideTitle} numberOfLines={2}>{item.pickupAddress || 'Unknown pickup'}</Text>
@@ -117,7 +132,8 @@ export default function AvailableRidesScreen({ navigation }) {
         <Text style={styles.acceptButtonText}>✅ Accept Ride</Text>
       </TouchableOpacity>
     </View>
-  );
+    );
+  };
 
   if (locationError) {
     return (
@@ -172,9 +188,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   refreshText: { fontSize: 14, color: '#FF6B00', fontWeight: '600' },
   rideCard: { backgroundColor: '#FFF', padding: 18, borderRadius: 15, marginHorizontal: 15, marginTop: 12, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  rideHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  rideHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   rideFare: { fontSize: 22, fontWeight: 'bold', color: '#4CAF50' },
   rideDistance: { fontSize: 14, color: '#999', fontWeight: '500' },
+  vehicleBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginBottom: 10 },
+  vehicleBadgeMoto:    { backgroundColor: '#FFF3E0', borderWidth: 1, borderColor: '#FF6B00' },
+  vehicleBadgeNormal:  { backgroundColor: '#E3F2FD', borderWidth: 1, borderColor: '#2196F3' },
+  vehicleBadgePremium: { backgroundColor: '#F3E5F5', borderWidth: 1, borderColor: '#9C27B0' },
+  vehicleBadgeText: { fontSize: 13, fontWeight: '700', color: '#333' },
   locationRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   locationDot: { marginRight: 8, fontSize: 12, marginTop: 2 },
   rideTitle: { fontSize: 15, fontWeight: '600', color: '#333', flex: 1 },
