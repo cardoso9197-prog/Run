@@ -66,7 +66,8 @@ export const driverAPI = {
   // Fixed: correct endpoint paths to match backend routes
   getAvailableRides: (latitude, longitude) => api.get('/rides/driver/available', { params: { latitude, longitude, radius: 50 } }),
   acceptRide: (rideId) => api.put(`/rides/${rideId}/accept`),
-  getEarnings: () => api.get('/drivers/earnings'),
+  getEarnings: (period = 'all') => api.get('/drivers/earnings', { params: { period } }),
+  getEarningsDetails: () => api.get('/drivers/earnings/details'),
   updateVehicle: (data) => api.put('/drivers/vehicle', data),
   // Active ride check — used on HomeScreen focus to resume in-progress trips
   getActiveRide: () => api.get('/rides/driver/active'),

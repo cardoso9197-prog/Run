@@ -145,6 +145,7 @@ router.post('/request', requirePassenger, async (req, res) => {
     }
 
     // Validate payment method if provided
+    let paymentMethodType = 'cash'; // default
     if (paymentMethodId) {
       const paymentMethodResult = await query(
         'SELECT id, type FROM payment_methods WHERE id = $1 AND user_id = $2 AND is_active = true',
@@ -156,6 +157,7 @@ router.post('/request', requirePassenger, async (req, res) => {
           error: 'Invalid or inactive payment method',
         });
       }
+      paymentMethodType = paymentMethodResult.rows[0].type;
     }
 
     // Get passenger ID
@@ -227,8 +229,9 @@ router.post('/request', requirePassenger, async (req, res) => {
         estimated_fare,
         surge_multiplier,
         additional_stops,
+        payment_method,
         status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `, [
       passengerId,
@@ -244,6 +247,7 @@ router.post('/request', requirePassenger, async (req, res) => {
       fareDetails.totalFare,
       fareDetails.surgeMultiplier,
       additionalStops.length > 0 ? JSON.stringify(additionalStops) : null,
+      paymentMethodType,
       'requested'
     ]);
 
@@ -1793,12 +1797,15 @@ router.get('/:id', async (req, res) => {
              d.profile_photo_url as driver_photo,
              d.vehicle_type as vehicle_type_name,
              du.rating as driver_rating,
-             du.phone as driver_phone
+             du.phone as driver_phone,
+             pay.payment_method as paid_method,
+             pay.amount as paid_amount
       FROM rides r
       JOIN passengers p ON r.passenger_id = p.id
       JOIN users pu ON p.user_id = pu.id
       LEFT JOIN drivers d ON r.driver_id = d.id
       LEFT JOIN users du ON d.user_id = du.id
+      LEFT JOIN payments pay ON r.id = pay.ride_id
       WHERE r.id = $1
     `, [rideId]);
 
@@ -1856,6 +1863,7 @@ router.get('/:id', async (req, res) => {
       arrivedAt: ride.arrived_at,
       startedAt: ride.started_at,
       completedAt: ride.completed_at,
+      paymentMethod: ride.paid_method || ride.payment_method || 'cash',
       passenger: {
         name: ride.passenger_name,
         photo: ride.passenger_photo,

@@ -57,6 +57,24 @@ export default function TripDetailsScreen({ route, navigation }) {
     return new Date(dateStr).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatPaymentMethod = (method) => {
+    if (!method) return 'Dinheiro / Cash';
+    const m = method.toLowerCase();
+    if (m.includes('orange')) return 'Orange Money';
+    if (m.includes('mtn') || m.includes('momo')) return 'MTN MoMo';
+    if (m.includes('card')) return 'Cartão / Card';
+    return 'Dinheiro / Cash';
+  };
+
+  const getPaymentIcon = (method) => {
+    if (!method) return '💵';
+    const m = method.toLowerCase();
+    if (m.includes('orange')) return '🟠';
+    if (m.includes('mtn') || m.includes('momo')) return '📱';
+    if (m.includes('card')) return '💳';
+    return '💵';
+  };
+
   const formatFare = (amount) => {
     return Math.round(amount || 0).toLocaleString();
   };
@@ -245,7 +263,7 @@ export default function TripDetailsScreen({ route, navigation }) {
     ${ride.driver?.name ? `<div class="info-row"><span class="label">Motorista / Driver:</span><span class="value">${ride.driver.name}</span></div>` : ''}
     ${ride.vehicleType || ride.vehicle?.vehicleType ? `<div class="info-row"><span class="label">Veículo / Vehicle:</span><span class="value">${ride.vehicleType || ride.vehicle?.vehicleType}</span></div>` : ''}
     ${ride.estimatedDistance ? `<div class="info-row"><span class="label">Distância / Distance:</span><span class="value">${ride.estimatedDistance} km</span></div>` : ''}
-    <div class="info-row"><span class="label">Pagamento / Payment:</span><span class="value">Dinheiro / Cash</span></div>
+    <div class="info-row"><span class="label">Pagamento / Payment:</span><span class="value">${formatPaymentMethod(ride.paymentMethod)}</span></div>
     <div class="info-row"><span class="label">Referência / Reference:</span><span class="value">${invoiceNum}</span></div>
   </div>
 
@@ -398,7 +416,7 @@ export default function TripDetailsScreen({ route, navigation }) {
         )}
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Payment</Text>
-          <Text style={styles.infoValue}>Cash</Text>
+          <Text style={styles.infoValue}>{getPaymentIcon(ride.paymentMethod)} {formatPaymentMethod(ride.paymentMethod)}</Text>
         </View>
         <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
           <Text style={styles.infoLabel}>Reference</Text>

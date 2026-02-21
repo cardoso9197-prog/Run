@@ -792,6 +792,9 @@ async function ensureRidesSchema() {
     if (!existingCols.includes('actual_duration_minutes'))
       await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS actual_duration_minutes INTEGER;`);
 
+    // 2b. Add payment_method column to rides (stores the selected method at booking time)
+    await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'cash';`);
+
     // 3. Fix status CHECK constraint to include 'arrived', 'started', 'requested', 'failed'
     //    Drop old constraint and add new one
     await pool.query(`
