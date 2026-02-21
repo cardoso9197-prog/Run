@@ -170,6 +170,11 @@ export default function ActiveRideScreen({ route, navigation }) {
               await rideAPI.startRide(rideId);
               await loadRide();
             } catch (error) {
+              // If already started (race condition), reload silently
+              if (error.response?.data?.currentStatus === 'started' || error.response?.status === 400) {
+                await loadRide();
+                return;
+              }
               console.error('Start error:', error.response?.data || error.message);
               Alert.alert('Error', error.response?.data?.error || 'Failed to start trip. Try again.');
             } finally {

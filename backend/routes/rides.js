@@ -1243,6 +1243,10 @@ router.put('/:id/start', requireDriver, async (req, res) => {
 
     const ride = rideResult.rows[0];
     if (!['accepted', 'arrived'].includes(ride.status)) {
+      // If already started (race condition / double tap), return success silently
+      if (ride.status === 'started') {
+        return res.json({ success: true, message: 'Ride already started', status: 'started' });
+      }
       return res.status(400).json({ error: 'Ride must be accepted or arrived to start', currentStatus: ride.status });
     }
 
@@ -1311,12 +1315,13 @@ router.put('/:id/complete', requireDriver, async (req, res) => {
 
     const updatedRide = await query('SELECT * FROM rides WHERE id = $1', [id]);
     const finalFare = parseFloat(updatedRide.rows[0].final_fare);
+    const ridePaymentMethod = updatedRide.rows[0].payment_method || 'cash';
     const platformCommission = finalFare * 0.20;
     const driverEarnings = finalFare - platformCommission;
 
     await query(`INSERT INTO payments (ride_id, passenger_id, driver_id, amount, payment_method, status, platform_commission, driver_earnings)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, ride.passenger_id, driverId, finalFare, 'cash', 'pending', platformCommission, driverEarnings]);
+      [id, ride.passenger_id, driverId, finalFare, ridePaymentMethod, 'pending', platformCommission, driverEarnings]);
 
     await query('UPDATE drivers SET total_earnings = total_earnings + $1 WHERE id = $2', [driverEarnings, driverId]);
 

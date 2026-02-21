@@ -37,13 +37,13 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('company')}:</Text>
-            <Text style={styles.aboutValue}>Kcdigital, sarl</Text>
+            <Text style={styles.aboutLabel}>{t('developer')}:</Text>
+            <Text style={styles.aboutValue}>Edivaldo Cardoso</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>{t('developer')}:</Text>
-            <Text style={styles.aboutValue}>Edivaldo Cardoso</Text>
+            <Text style={styles.aboutLabel}>{t('company')}:</Text>
+            <Text style={styles.aboutValue}>KCDIGITAL, SARL "Run Run GB"</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
