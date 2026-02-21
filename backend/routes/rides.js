@@ -251,7 +251,7 @@ router.post('/request', requirePassenger, async (req, res) => {
 
     // Find nearby online drivers and send push notifications
     try {
-      // Get online drivers with matching vehicle type and push tokens
+      // Get all online drivers with push tokens
       const nearbyDriversResult = await query(`
         SELECT 
           d.id,
@@ -264,12 +264,7 @@ router.post('/request', requirePassenger, async (req, res) => {
         WHERE d.status = 'online' 
           AND d.is_activated = true
           AND d.push_token IS NOT NULL
-          AND (
-            LOWER(d.vehicle_type) = LOWER($1)
-            OR d.vehicle_type IS NULL
-            OR d.vehicle_type = ''
-          )
-      `, [vehicleType || 'Normal']);
+      `);
 
       console.log(`🔍 Found ${nearbyDriversResult.rows.length} online drivers with push tokens`);
 
@@ -292,8 +287,8 @@ router.post('/request', requirePassenger, async (req, res) => {
             return { ...driver, distanceToPickup };
           });
 
-          // Filter drivers within 10km radius
-          const MAX_DISTANCE_KM = 10;
+          // Filter drivers within 50km radius
+          const MAX_DISTANCE_KM = 50;
           eligibleDrivers = driversWithDistance.filter(
             driver => driver.distanceToPickup <= MAX_DISTANCE_KM
           );
@@ -844,7 +839,7 @@ router.post('/:id/rate', requirePassenger, async (req, res) => {
  */
 router.get('/driver/available', requireDriver, async (req, res) => {
   try {
-    const { latitude, longitude, radius = 5 } = req.query;
+    const { latitude, longitude, radius = 50 } = req.query;
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -863,11 +858,7 @@ router.get('/driver/available', requireDriver, async (req, res) => {
       });
     }
 
-    const driverId = driverResult.rows[0].id;
-    const driverVehicleType = driverResult.rows[0].vehicle_type; // e.g. 'Moto', 'Normal', 'Premium'
-
-    // Find nearby ride requests matching driver's vehicle type
-    // A driver only sees rides that match their registered vehicle type
+    // Find nearby ride requests — no vehicle type filter (all drivers see all rides)
     const ridesResult = await query(`
       SELECT * FROM (
         SELECT r.*,
@@ -882,24 +873,17 @@ router.get('/driver/available', requireDriver, async (req, res) => {
         JOIN passengers p ON r.passenger_id = p.id
         JOIN users u ON p.user_id = u.id
         WHERE r.status = 'requested'
-          AND r.requested_at > NOW() - INTERVAL '10 minutes'
-          AND (
-            LOWER(r.vehicle_type) = LOWER($4)
-            OR r.vehicle_type IS NULL
-            OR r.vehicle_type = ''
-          )
+          AND r.requested_at > NOW() - INTERVAL '30 minutes'
       ) AS nearby_rides
       WHERE pickup_distance_km <= $3
       ORDER BY pickup_distance_km ASC, requested_at ASC
       LIMIT 10
-    `, [latitude, longitude, radius, driverVehicleType || 'Normal']);
+    `, [latitude, longitude, radius]);
 
     res.json({
       success: true,
-      driverVehicleType: driverVehicleType,
       rides: ridesResult.rows.map(ride => ({
         id: ride.id,
-        vehicleType: ride.vehicle_type,
         pickupAddress: ride.pickup_address,
         dropoffAddress: ride.dropoff_address,
         pickupLocation: {

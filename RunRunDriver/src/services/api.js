@@ -64,7 +64,7 @@ export const driverAPI = {
   updateProfile: (data) => api.put('/drivers/profile', data),
   updateStatus: (data) => api.put('/drivers/status', data),
   // Fixed: correct endpoint paths to match backend routes
-  getAvailableRides: (latitude, longitude) => api.get('/rides/driver/available', { params: { latitude, longitude } }),
+  getAvailableRides: (latitude, longitude) => api.get('/rides/driver/available', { params: { latitude, longitude, radius: 50 } }),
   acceptRide: (rideId) => api.put(`/rides/${rideId}/accept`),
   getEarnings: () => api.get('/drivers/earnings'),
   updateVehicle: (data) => api.put('/drivers/vehicle', data),
