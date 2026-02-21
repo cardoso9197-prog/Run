@@ -20,6 +20,8 @@ export default function ActiveRideScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [prevStatus, setPrevStatus] = useState(null);
+  const [driverHeading, setDriverHeading] = useState(0);
+  const prevDriverLocation = useRef(null);
   const mapRef = useRef(null);
   const arrivedAnim = useRef(new Animated.Value(0)).current;
 
@@ -75,6 +77,21 @@ export default function ActiveRideScreen({ route, navigation }) {
       const rideData = response.data;
       setRide(rideData);
       setError(null);
+
+      // Calculate driver heading from previous → current location for car rotation
+      const newLoc = rideData.driver?.currentLocation;
+      if (newLoc?.latitude && prevDriverLocation.current) {
+        const prev = prevDriverLocation.current;
+        const dLat = parseFloat(newLoc.latitude) - parseFloat(prev.latitude);
+        const dLon = parseFloat(newLoc.longitude) - parseFloat(prev.longitude);
+        if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
+          const heading = (Math.atan2(dLon, dLat) * 180) / Math.PI;
+          setDriverHeading(heading);
+        }
+      }
+      if (newLoc?.latitude) {
+        prevDriverLocation.current = newLoc;
+      }
 
       // Auto-navigate when completed
       if (rideData.status === 'completed') {
@@ -222,7 +239,14 @@ export default function ActiveRideScreen({ route, navigation }) {
 
           {/* Driver Marker — shown for accepted / arrived / started */}
           {showDriverOnMap && (
-            <Marker coordinate={driverCoords} title="Your Driver" description={ride.driver.name}>
+            <Marker
+              coordinate={driverCoords}
+              title="Your Driver"
+              description={ride.driver.name}
+              anchor={{ x: 0.5, y: 0.5 }}
+              flat={true}
+              rotation={driverHeading}
+            >
               <View style={[styles.driverMarker, ride.status === 'arrived' && styles.driverMarkerArrived]}>
                 <Text style={styles.driverMarkerText}>🚗</Text>
               </View>

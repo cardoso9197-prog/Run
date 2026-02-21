@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, Platform, ActivityIndicator } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, Platform, ActivityIndicator } from 'react-native';import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
 import { rideAPI } from '../services/api';
 import locationService from '../services/locationService';
@@ -10,6 +9,8 @@ export default function ActiveRideScreen({ route, navigation }) {
   const { rideId } = route.params;
   const [ride, setRide] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
+  const [driverHeading, setDriverHeading] = useState(0);
+  const prevDriverLoc = useRef(null);
   const [mapRegion, setMapRegion] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -37,10 +38,21 @@ export default function ActiveRideScreen({ route, navigation }) {
     try {
       const location = await locationService.getCurrentLocation();
       if (location) {
-        setDriverLocation({
+        const newLoc = {
           latitude: location.latitude,
           longitude: location.longitude,
-        });
+        };
+        // Calculate heading from movement
+        if (prevDriverLoc.current) {
+          const dLat = newLoc.latitude - prevDriverLoc.current.latitude;
+          const dLon = newLoc.longitude - prevDriverLoc.current.longitude;
+          if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
+            const heading = (Math.atan2(dLon, dLat) * 180) / Math.PI;
+            setDriverHeading(heading);
+          }
+        }
+        prevDriverLoc.current = newLoc;
+        setDriverLocation(newLoc);
       }
     } catch (error) {
       console.error('Failed to get current location:', error);
@@ -263,10 +275,25 @@ export default function ActiveRideScreen({ route, navigation }) {
         <MapView
           style={styles.map}
           region={mapRegion}
-          showsUserLocation={true}
+          showsUserLocation={false}
           showsMyLocationButton={true}
           provider={PROVIDER_GOOGLE}
         >
+          {/* Driver's own position — animated car icon */}
+          {driverLocation && (
+            <Marker
+              coordinate={driverLocation}
+              anchor={{ x: 0.5, y: 0.5 }}
+              flat={true}
+              rotation={driverHeading}
+              title="You"
+            >
+              <View style={styles.driverCarMarker}>
+                <Text style={styles.driverCarIcon}>🚖</Text>
+              </View>
+            </Marker>
+          )}
+
           <Marker coordinate={pickupCoords} title="Pickup" description={pickupAddress} pinColor={ride.status === 'started' ? '#999' : '#4CAF50'} />
           <Marker coordinate={dropoffCoords} title="Dropoff" description={dropoffAddress} pinColor={ride.status === 'started' ? '#FF6B00' : '#999'} />
           <Polyline
@@ -373,6 +400,21 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 15 },
+
+  // Driver car icon on map
+  driverCarMarker: {
+    backgroundColor: '#FF6B00',
+    borderRadius: 20,
+    padding: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  driverCarIcon: { fontSize: 22 },
   detailsCard: {
     position: 'absolute',
     bottom: 0,
