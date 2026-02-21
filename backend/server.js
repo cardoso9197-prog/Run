@@ -750,6 +750,97 @@ app.use((req, res) => {
 });
 
 // Auto-migration: Create payment_methods table if it doesn't exist
+async function ensureRidesSchema() {
+  try {
+    console.log('🔧 Checking rides table schema...');
+
+    // 1. Add missing timestamp columns if they don't exist
+    const columns = ['arrived_at', 'started_at', 'cancelled_at', 'cancellation_reason', 'cancellation_fee'];
+    for (const col of columns) {
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS ${col} ${col.endsWith('_fee') ? 'DECIMAL(10,2)' : col === 'cancellation_reason' ? 'TEXT' : 'TIMESTAMP'};`);
+    }
+
+    // 2. Add driver_id column referencing drivers.id (not users.id) if rides table uses wrong ref
+    //    Check current driver_id type and what it references
+    const colCheck = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'rides' AND column_name IN (
+        'driver_id','vehicle_type','estimated_distance_km','estimated_fare',
+        'surge_multiplier','additional_stops','estimated_duration_minutes',
+        'actual_distance_km','actual_duration_minutes','final_fare'
+      )
+    `);
+    const existingCols = colCheck.rows.map(r => r.column_name);
+
+    if (!existingCols.includes('vehicle_type'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(50) DEFAULT 'Normal';`);
+    if (!existingCols.includes('estimated_distance_km'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS estimated_distance_km DECIMAL(10,2);`);
+    if (!existingCols.includes('estimated_duration_minutes'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS estimated_duration_minutes INTEGER;`);
+    if (!existingCols.includes('estimated_fare'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS estimated_fare DECIMAL(10,2);`);
+    if (!existingCols.includes('final_fare'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS final_fare DECIMAL(10,2);`);
+    if (!existingCols.includes('surge_multiplier'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS surge_multiplier DECIMAL(4,2) DEFAULT 1.0;`);
+    if (!existingCols.includes('additional_stops'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS additional_stops TEXT;`);
+    if (!existingCols.includes('actual_distance_km'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS actual_distance_km DECIMAL(10,2);`);
+    if (!existingCols.includes('actual_duration_minutes'))
+      await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS actual_duration_minutes INTEGER;`);
+
+    // 3. Fix status CHECK constraint to include 'arrived', 'started', 'requested', 'failed'
+    //    Drop old constraint and add new one
+    await pool.query(`
+      ALTER TABLE rides DROP CONSTRAINT IF EXISTS rides_status_check;
+    `);
+    await pool.query(`
+      ALTER TABLE rides ADD CONSTRAINT rides_status_check
+        CHECK (status IN ('requested','pending','accepted','arrived','started','picked_up','completed','cancelled','failed'));
+    `);
+
+    // 4. Ensure requested_at column exists
+    await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+    await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMP;`);
+    await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;`);
+    await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS pickup_address TEXT;`);
+    await pool.query(`ALTER TABLE rides ADD COLUMN IF NOT EXISTS dropoff_address TEXT;`);
+
+    // 5. Ensure driver_locations table has correct driver_id referencing drivers not users
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_locations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER NOT NULL,
+        latitude DECIMAL(10,8) NOT NULL,
+        longitude DECIMAL(11,8) NOT NULL,
+        heading DECIMAL(5,2),
+        speed DECIMAL(5,2),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 6. Ensure drivers table has needed columns
+    const driverCols = ['push_token','push_platform','current_latitude','current_longitude',
+                        'vehicle_type','is_activated','total_rides','total_earnings'];
+    for (const col of driverCols) {
+      let colDef = 'TEXT';
+      if (col === 'is_activated') colDef = 'BOOLEAN DEFAULT false';
+      if (col === 'total_rides') colDef = 'INTEGER DEFAULT 0';
+      if (col === 'total_earnings') colDef = 'DECIMAL(12,2) DEFAULT 0';
+      if (col.includes('latitude') || col.includes('longitude')) colDef = 'DECIMAL(10,8)';
+      await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS ${col} ${colDef};`);
+    }
+
+    console.log('✅ Rides schema migration complete');
+  } catch (error) {
+    console.error('⚠️ Rides schema migration error:', error.message);
+    // Non-fatal — don't crash server
+  }
+}
+
 async function ensurePaymentMethodsTable() {
   try {
     console.log('ðŸ”§ Checking payment_methods setup...');
@@ -861,7 +952,7 @@ server.on('error', (error) => {
 });
 
 // Run migrations and start server
-ensurePaymentMethodsTable().then(() => {
+ensureRidesSchema().then(() => ensurePaymentMethodsTable()).then(() => {
   server.listen(PORT, HOST, () => {
     console.log('\nðŸš€ =============================================');
     console.log(`ðŸš— Run Run Backend Server`);
