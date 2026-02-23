@@ -828,7 +828,8 @@ async function ensureRidesSchema() {
     // 6. Ensure drivers table has needed columns
     const driverCols = ['push_token','push_platform','current_latitude','current_longitude',
                         'vehicle_type','is_activated','total_rides','total_earnings',
-                        'available_balance','pending_withdrawals'];
+                        'available_balance','pending_withdrawals',
+                        'vehicle_make','vehicle_model','vehicle_color','license_plate'];
     for (const col of driverCols) {
       let colDef = 'TEXT';
       if (col === 'is_activated') colDef = 'BOOLEAN DEFAULT false';

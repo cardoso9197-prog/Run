@@ -9,6 +9,7 @@ const express = require('express');
 const { query } = require('../database/db');
 const { requireDriver } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcrypt');
 
 const router = express.Router();
 
@@ -252,7 +253,28 @@ router.post('/request', requireDriver, async (req, res) => {
       mobileNumber,
       accountName,
       frequency, // 'daily' or 'weekly'
+      password,
     } = req.body;
+
+    // Verify password before processing
+    if (!password) {
+      return res.status(400).json({
+        error: 'Password required',
+        message: 'Please enter your account password to authorize this withdrawal',
+      });
+    }
+
+    const userResult = await query('SELECT password FROM users WHERE id = $1', [req.user.id]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const passwordValid = await bcrypt.compare(password, userResult.rows[0].password);
+    if (!passwordValid) {
+      return res.status(401).json({
+        error: 'Invalid password',
+        message: 'Incorrect password. Withdrawal cancelled.',
+      });
+    }
 
     // Validate inputs
     if (!amount || amount <= 0) {

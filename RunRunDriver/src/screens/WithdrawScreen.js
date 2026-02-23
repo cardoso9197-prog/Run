@@ -21,6 +21,8 @@ export default function WithdrawScreen({ navigation }) {
   const [mobileNumber, setMobileNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [frequency, setFrequency] = useState('daily'); // daily or weekly
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Settings
   const [settings, setSettings] = useState(null);
@@ -103,6 +105,11 @@ export default function WithdrawScreen({ navigation }) {
       Alert.alert('Error', 'Please enter mobile number');
       return;
     }
+
+    if (!password) {
+      Alert.alert('Error', 'Please enter your password to confirm withdrawal');
+      return;
+    }
     
     // Format phone number
     const formattedPhone = mobileNumber.startsWith('+245') 
@@ -130,6 +137,7 @@ export default function WithdrawScreen({ navigation }) {
                 mobileNumber: formattedPhone,
                 accountName: accountName || mobileNumber,
                 frequency,
+                password,
               });
               
               Alert.alert(
@@ -137,8 +145,8 @@ export default function WithdrawScreen({ navigation }) {
                 'Withdrawal request submitted! Funds will be sent within 24 hours.',
                 [{ text: 'OK', onPress: () => {
                   setAmount('');
+                  setPassword('');
                   loadBalanceAndSettings();
-                  navigation.navigate('WithdrawalHistory');
                 }}]
               );
             } catch (error) {
@@ -274,6 +282,23 @@ export default function WithdrawScreen({ navigation }) {
           <Text style={styles.infoText}>💵 No additional fees</Text>
         </View>
 
+        {/* Password confirmation */}
+        <Text style={styles.label}>🔒 Confirm Password</Text>
+        <Text style={styles.passwordHint}>Enter your account password to authorize this withdrawal</Text>
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity style={styles.passwordToggle} onPress={() => setShowPassword(!showPassword)}>
+            <Text style={styles.passwordToggleText}>{showPassword ? '🙈' : '👁️'}</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Withdraw Button */}
         <TouchableOpacity
           style={[styles.withdrawButton, loading && styles.withdrawButtonDisabled]}
@@ -378,7 +403,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   infoText: { fontSize: 13, color: '#333', marginBottom: 5 },
-  
+
+  passwordHint: { fontSize: 12, color: '#888', marginBottom: 8, marginTop: -4 },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    backgroundColor: '#FFF',
+    marginBottom: 16,
+  },
+  passwordInput: { flex: 1, padding: 12, fontSize: 16, color: '#333' },
+  passwordToggle: { padding: 12 },
+  passwordToggleText: { fontSize: 18 },
+
   withdrawButton: {
     backgroundColor: '#FF6B00',
     padding: 18,

@@ -286,11 +286,36 @@ export default function ActiveRideScreen({ route, navigation }) {
           <Text style={styles.statusText}>{statusInfo.text}</Text>
         </View>
 
-        {/* ETA card — only when driver is on the way */}
+        {/* ETA card — driver on the way to pickup */}
         {ride.status === 'accepted' && eta && (
           <View style={styles.etaCard}>
-            <Text style={styles.etaLabel}>Driver arriving in</Text>
+            <Text style={styles.etaLabel}>🚗 Driver arriving in</Text>
             <Text style={styles.etaTime}>{eta} min</Text>
+            {hasDriverLocation && (
+              <Text style={styles.etaSubtext}>
+                {calculateDistance(
+                  parseFloat(ride.driver.currentLocation.latitude),
+                  parseFloat(ride.driver.currentLocation.longitude),
+                  ride.pickupLocation.latitude,
+                  ride.pickupLocation.longitude
+                ).toFixed(1)} km away · Live tracking active
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* ETA card — trip in progress, ETA to dropoff */}
+        {ride.status === 'started' && ride.driver?.currentLocation?.latitude && ride.dropoffLocation && (
+          <View style={[styles.etaCard, { backgroundColor: '#E8F5E9' }]}>
+            <Text style={styles.etaLabel}>🏁 ETA to destination</Text>
+            <Text style={[styles.etaTime, { color: '#4CAF50' }]}>
+              {Math.max(1, Math.ceil((calculateDistance(
+                parseFloat(ride.driver.currentLocation.latitude),
+                parseFloat(ride.driver.currentLocation.longitude),
+                ride.dropoffLocation.latitude,
+                ride.dropoffLocation.longitude
+              ) / 25) * 60))} min
+            </Text>
             <Text style={styles.etaSubtext}>Live tracking active</Text>
           </View>
         )}
@@ -327,10 +352,44 @@ export default function ActiveRideScreen({ route, navigation }) {
               <Text style={styles.sectionTitle}>👤 Driver</Text>
               <View style={styles.driverInfo}>
                 <Text style={styles.driverName}>{ride.driver.name}</Text>
-                {ride.vehicle?.vehicleType && (
-                  <Text style={styles.driverDetails}>🚗 {ride.vehicle.vehicleType}</Text>
+                {ride.driver.rating > 0 && (
+                  <Text style={styles.driverDetails}>⭐ {ride.driver.rating.toFixed(1)}</Text>
                 )}
                 <Text style={styles.driverDetails}>📞 {ride.driver.phone}</Text>
+              </View>
+
+              {/* Vehicle card */}
+              <View style={styles.vehicleCard}>
+                <Text style={styles.vehicleCardTitle}>🚗 Vehicle</Text>
+                <View style={styles.vehicleRow}>
+                  <View style={styles.vehicleItem}>
+                    <Text style={styles.vehicleLabel}>Type</Text>
+                    <Text style={styles.vehicleValue}>{ride.vehicle?.vehicleType || '—'}</Text>
+                  </View>
+                  {ride.vehicle?.make ? (
+                    <View style={styles.vehicleItem}>
+                      <Text style={styles.vehicleLabel}>Make</Text>
+                      <Text style={styles.vehicleValue}>{ride.vehicle.make}</Text>
+                    </View>
+                  ) : null}
+                  {ride.vehicle?.model ? (
+                    <View style={styles.vehicleItem}>
+                      <Text style={styles.vehicleLabel}>Model</Text>
+                      <Text style={styles.vehicleValue}>{ride.vehicle.model}</Text>
+                    </View>
+                  ) : null}
+                  {ride.vehicle?.color ? (
+                    <View style={styles.vehicleItem}>
+                      <Text style={styles.vehicleLabel}>Color</Text>
+                      <Text style={styles.vehicleValue}>{ride.vehicle.color}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {ride.vehicle?.licensePlate ? (
+                  <View style={styles.plateContainer}>
+                    <Text style={styles.plateText}>{ride.vehicle.licensePlate}</Text>
+                  </View>
+                ) : null}
               </View>
             </>
           )}
@@ -458,9 +517,36 @@ const styles = StyleSheet.create({
   routeContainer: { backgroundColor: '#F9F9F9', padding: 14, borderRadius: 10, marginBottom: 12 },
   locationLabel: { fontSize: 13, color: '#666', marginTop: 8 },
   locationText: { fontSize: 15, fontWeight: '600', color: '#000', marginBottom: 4 },
-  driverInfo: { backgroundColor: '#F9F9F9', padding: 14, borderRadius: 10, marginBottom: 12 },
-  driverName: { fontSize: 18, fontWeight: 'bold', color: '#000', marginBottom: 6 },
+  driverInfo: { backgroundColor: '#F9F9F9', padding: 14, borderRadius: 10, marginBottom: 8 },
+  driverName: { fontSize: 18, fontWeight: 'bold', color: '#000', marginBottom: 4 },
   driverDetails: { fontSize: 15, color: '#666', marginBottom: 4 },
+
+  // Vehicle card
+  vehicleCard: {
+    backgroundColor: '#F0F4FF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#D0D8FF',
+  },
+  vehicleCardTitle: { fontSize: 15, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+  vehicleRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  vehicleItem: { width: '50%', marginBottom: 8 },
+  vehicleLabel: { fontSize: 11, color: '#888', marginBottom: 2 },
+  vehicleValue: { fontSize: 14, fontWeight: '600', color: '#333' },
+  plateContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    borderWidth: 2,
+    borderColor: '#333',
+  },
+  plateText: { fontSize: 18, fontWeight: 'bold', color: '#333', letterSpacing: 3 },
+
   fareSection: { backgroundColor: '#FF6B00', padding: 18, borderRadius: 10, alignItems: 'center', marginVertical: 12 },
   fareLabel: { fontSize: 15, color: '#FFF', marginBottom: 4 },
   fareAmount: { fontSize: 30, fontWeight: 'bold', color: '#FFF' },

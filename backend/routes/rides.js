@@ -380,6 +380,10 @@ router.get('/active', requirePassenger, async (req, res) => {
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
              d.vehicle_type as driver_vehicle_type,
+             d.license_plate as driver_license_plate,
+             d.vehicle_make as driver_vehicle_make,
+             d.vehicle_model as driver_vehicle_model,
+             d.vehicle_color as driver_vehicle_color,
              u.rating as driver_rating,
              u.phone as driver_phone
       FROM rides r
@@ -448,6 +452,10 @@ router.get('/active', requirePassenger, async (req, res) => {
         } : null,
         vehicle: ride.driver_id ? {
           vehicleType: ride.driver_vehicle_type || ride.vehicle_type || 'RunRun',
+          make: ride.driver_vehicle_make || '',
+          model: ride.driver_vehicle_model || '',
+          color: ride.driver_vehicle_color || '',
+          licensePlate: ride.driver_license_plate || '',
         } : null,
       },
     });
@@ -1806,6 +1814,10 @@ router.get('/:id', async (req, res) => {
              d.name as driver_name,
              d.profile_photo_url as driver_photo,
              d.vehicle_type as vehicle_type_name,
+             d.license_plate as driver_license_plate,
+             d.vehicle_make as driver_vehicle_make,
+             d.vehicle_model as driver_vehicle_model,
+             d.vehicle_color as driver_vehicle_color,
              du.rating as driver_rating,
              du.phone as driver_phone,
              pay.payment_method as paid_method,
@@ -1893,6 +1905,10 @@ router.get('/:id', async (req, res) => {
       };
       rideData.vehicle = {
         vehicleType: ride.vehicle_type_name || ride.vehicle_type || 'RunRun',
+        make: ride.driver_vehicle_make || '',
+        model: ride.driver_vehicle_model || '',
+        color: ride.driver_vehicle_color || '',
+        licensePlate: ride.driver_license_plate || '',
       };
     }
 
