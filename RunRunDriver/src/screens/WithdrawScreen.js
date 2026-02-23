@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import { driverAPI } from '../services/api';
 
 export default function WithdrawScreen({ navigation }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [loadingBalance, setLoadingBalance] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Balance info
   const [availableBalance, setAvailableBalance] = useState(0);
@@ -23,9 +25,12 @@ export default function WithdrawScreen({ navigation }) {
   // Settings
   const [settings, setSettings] = useState(null);
   
-  useEffect(() => {
-    loadBalanceAndSettings();
-  }, []);
+  // Reload balance every time this screen is focused (e.g. after completing a trip)
+  useFocusEffect(
+    useCallback(() => {
+      loadBalanceAndSettings();
+    }, [])
+  );
 
   const loadBalanceAndSettings = async () => {
     try {
@@ -66,7 +71,13 @@ export default function WithdrawScreen({ navigation }) {
       Alert.alert('Error', `Failed to load balance: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoadingBalance(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadBalanceAndSettings();
   };
 
   const handleWithdraw = async () => {
@@ -163,7 +174,10 @@ export default function WithdrawScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF6B00']} />}
+    >
       {/* Balance Card */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceTitle}>💰 Available Balance</Text>

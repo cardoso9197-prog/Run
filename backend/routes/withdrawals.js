@@ -47,33 +47,37 @@ router.get('/balance', requireDriver, async (req, res) => {
 
     const pendingAmount = parseFloat(pendingResult.rows[0].total);
 
-    // Calculate available balance dynamically from payments if stored value is 0/null
-    // This handles rides completed before the available_balance column was tracked
-    let availableBalance = parseFloat(driver.available_balance || 0);
-    if (availableBalance === 0) {
-      const earningsResult = await query(
-        `SELECT COALESCE(SUM(COALESCE(p.driver_earnings, r.final_fare * 0.80, r.estimated_fare * 0.80)), 0) as computed_earnings
-         FROM rides r
-         LEFT JOIN payments p ON r.id = p.ride_id
-         WHERE r.driver_id = $1 AND r.status = 'completed'`,
-        [driver.id]
-      );
-      const computedEarnings = parseFloat(earningsResult.rows[0].computed_earnings || 0);
-      availableBalance = Math.max(0, computedEarnings - pendingAmount);
+    // Always compute available balance fresh from all completed rides minus withdrawals
+    // This ensures it's always accurate regardless of stored column value
+    const earningsResult = await query(
+      `SELECT COALESCE(SUM(COALESCE(p.driver_earnings, r.final_fare * 0.80, r.estimated_fare * 0.80)), 0) as computed_earnings
+       FROM rides r
+       LEFT JOIN payments p ON r.id = p.ride_id
+       WHERE r.driver_id = $1 AND r.status = 'completed'`,
+      [driver.id]
+    );
+    const computedEarnings = parseFloat(earningsResult.rows[0].computed_earnings || 0);
 
-      // Sync the column so future reads are fast
-      if (computedEarnings > 0) {
-        await query(
-          'UPDATE drivers SET available_balance = $1, total_earnings = GREATEST(total_earnings, $1) WHERE id = $2',
-          [availableBalance, driver.id]
-        );
-      }
-    }
+    // Get total withdrawn (completed withdrawals)
+    const withdrawnResult = await query(
+      `SELECT COALESCE(SUM(amount), 0) as total_withdrawn
+       FROM withdrawals WHERE driver_id = $1 AND status = 'completed'`,
+      [driver.id]
+    );
+    const totalWithdrawn = parseFloat(withdrawnResult.rows[0].total_withdrawn || 0);
+
+    const availableBalance = Math.max(0, computedEarnings - totalWithdrawn - pendingAmount);
+
+    // Keep stored columns in sync
+    await query(
+      'UPDATE drivers SET available_balance = $1, total_earnings = GREATEST(total_earnings, $2) WHERE id = $3',
+      [availableBalance, computedEarnings, driver.id]
+    );
 
     res.json({
       success: true,
       balance: {
-        totalEarnings: parseFloat(driver.total_earnings || 0),
+        totalEarnings: computedEarnings,
         availableBalance,
         pendingWithdrawals: pendingAmount,
         pendingCount: parseInt(pendingResult.rows[0].count),
