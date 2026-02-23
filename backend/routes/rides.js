@@ -1158,9 +1158,9 @@ router.put('/:id/status', requireDriver, async (req, res) => {
         ]);
       }
 
-      // Update driver total earnings
+      // Update driver total earnings AND available balance
       await query(
-        'UPDATE drivers SET total_earnings = total_earnings + $1 WHERE id = $2',
+        'UPDATE drivers SET total_earnings = total_earnings + $1, available_balance = COALESCE(available_balance, 0) + $1 WHERE id = $2',
         [driverEarnings, driverId]
       );
     }
@@ -1328,7 +1328,7 @@ router.put('/:id/complete', requireDriver, async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [id, ride.passenger_id, driverId, finalFare, ridePaymentMethod, 'pending', platformCommission, driverEarnings]);
 
-    await query('UPDATE drivers SET total_earnings = total_earnings + $1 WHERE id = $2', [driverEarnings, driverId]);
+    await query('UPDATE drivers SET total_earnings = total_earnings + $1, available_balance = COALESCE(available_balance, 0) + $1 WHERE id = $2', [driverEarnings, driverId]);
 
     // Notify passenger
     try {

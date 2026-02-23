@@ -827,12 +827,15 @@ async function ensureRidesSchema() {
 
     // 6. Ensure drivers table has needed columns
     const driverCols = ['push_token','push_platform','current_latitude','current_longitude',
-                        'vehicle_type','is_activated','total_rides','total_earnings'];
+                        'vehicle_type','is_activated','total_rides','total_earnings',
+                        'available_balance','pending_withdrawals'];
     for (const col of driverCols) {
       let colDef = 'TEXT';
       if (col === 'is_activated') colDef = 'BOOLEAN DEFAULT false';
       if (col === 'total_rides') colDef = 'INTEGER DEFAULT 0';
       if (col === 'total_earnings') colDef = 'DECIMAL(12,2) DEFAULT 0';
+      if (col === 'available_balance') colDef = 'DECIMAL(12,2) DEFAULT 0';
+      if (col === 'pending_withdrawals') colDef = 'DECIMAL(12,2) DEFAULT 0';
       if (col.includes('latitude') || col.includes('longitude')) colDef = 'DECIMAL(10,8)';
       await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS ${col} ${colDef};`);
     }
