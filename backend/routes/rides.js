@@ -1125,33 +1125,38 @@ router.put('/:id/status', requireDriver, async (req, res) => {
 
       // Calculate final fare
       const updatedRide = await query('SELECT * FROM rides WHERE id = $1', [id]);
-      const finalFare = parseFloat(updatedRide.rows[0].final_fare);
+      const rideRow = updatedRide.rows[0];
+      const finalFare = parseFloat(rideRow.final_fare || rideRow.estimated_fare || 0);
+      const ridePaymentMethod = rideRow.payment_method || 'cash';
       const commissionRate = 20; // 20%
       const platformCommission = finalFare * (commissionRate / 100);
       const driverEarnings = finalFare - platformCommission;
 
-      // Create payment record
-      await query(`
-        INSERT INTO payments (
-          ride_id,
-          passenger_id,
-          driver_id,
-          amount,
-          payment_method,
-          status,
-          platform_commission,
-          driver_earnings
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [
-        id,
-        ride.passenger_id,
-        driverId,
-        finalFare,
-        'cash', // Default to cash for now
-        'pending',
-        platformCommission,
-        driverEarnings
-      ]);
+      // Create payment record (skip if already exists to avoid duplicates)
+      const existingPayment = await query('SELECT id FROM payments WHERE ride_id = $1', [id]);
+      if (existingPayment.rows.length === 0) {
+        await query(`
+          INSERT INTO payments (
+            ride_id,
+            passenger_id,
+            driver_id,
+            amount,
+            payment_method,
+            status,
+            platform_commission,
+            driver_earnings
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `, [
+          id,
+          ride.passenger_id,
+          driverId,
+          finalFare,
+          ridePaymentMethod,
+          'pending',
+          platformCommission,
+          driverEarnings
+        ]);
+      }
 
       // Update driver total earnings
       await query(

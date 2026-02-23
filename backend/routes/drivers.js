@@ -241,9 +241,9 @@ router.get('/earnings', requireDriver, async (req, res) => {
     const result = await query(`
       SELECT 
         COUNT(r.id) as total_rides,
-        COALESCE(SUM(p.driver_earnings), 0) as total_earnings,
-        COALESCE(SUM(p.platform_commission), 0) as total_commission,
-        COALESCE(SUM(p.amount), 0) as total_fares,
+        COALESCE(SUM(COALESCE(p.driver_earnings, r.final_fare * 0.80, r.estimated_fare * 0.80)), 0) as total_earnings,
+        COALESCE(SUM(COALESCE(p.platform_commission, r.final_fare * 0.20, r.estimated_fare * 0.20)), 0) as total_commission,
+        COALESCE(SUM(COALESCE(p.amount, r.final_fare, r.estimated_fare)), 0) as total_fares,
         COALESCE(AVG(r.estimated_distance_km), 0) as avg_distance,
         COALESCE(AVG(rt.passenger_rating), 0) as avg_rating
       FROM rides r
@@ -290,12 +290,12 @@ router.get('/earnings/details', requireDriver, async (req, res) => {
         r.dropoff_address,
         r.estimated_distance_km as distance_km,
         r.completed_at,
-        p.amount as fare,
-        p.driver_earnings,
-        p.platform_commission,
-        p.payment_method
+        COALESCE(p.amount, r.final_fare, r.estimated_fare) as fare,
+        COALESCE(p.driver_earnings, r.final_fare * 0.80, r.estimated_fare * 0.80) as driver_earnings,
+        COALESCE(p.platform_commission, r.final_fare * 0.20, r.estimated_fare * 0.20) as platform_commission,
+        COALESCE(p.payment_method, r.payment_method, 'cash') as payment_method
       FROM rides r
-      JOIN payments p ON r.id = p.ride_id
+      LEFT JOIN payments p ON r.id = p.ride_id
       WHERE r.driver_id = $1
         AND r.status = 'completed'
       ORDER BY r.completed_at DESC
