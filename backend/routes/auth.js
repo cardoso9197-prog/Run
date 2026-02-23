@@ -261,9 +261,10 @@ router.post('/verify-otp', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
   try {
-    // Accept both 'phone' and 'phoneNumber' (matching registration endpoint)
-    const { phoneNumber, phone } = req.body;
+    // Accept both 'phone' and 'phoneNumber', 'role' and 'userType'
+    const { phoneNumber, phone, password, role, userType } = req.body;
     const finalPhone = phoneNumber || phone;
+    const expectedUserType = userType || role; // Optional: enforce role
 
     console.log('🔐 Login request:', { phoneNumber, phone, finalPhone });
 
@@ -274,10 +275,13 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Get user
+    // Format phone number if needed
+    const formattedPhone = finalPhone.startsWith('+245') ? finalPhone : `+245${finalPhone}`;
+
+    // Get user with password
     const userResult = await query(
-      'SELECT id, user_type FROM users WHERE phone = $1',
-      [finalPhone]
+      'SELECT id, user_type, password FROM users WHERE phone = $1',
+      [formattedPhone]
     );
 
     if (userResult.rows.length === 0) {
@@ -289,9 +293,28 @@ router.post('/login', async (req, res) => {
 
     const user = userResult.rows[0];
 
+    // Verify password if provided and user has a password set
+    if (password && user.password) {
+      const passwordValid = await bcrypt.compare(password, user.password);
+      if (!passwordValid) {
+        return res.status(401).json({
+          error: 'Invalid credentials',
+          message: 'Incorrect phone number or password',
+        });
+      }
+    }
+
+    // Enforce role if the app specifies which role is expected
+    if (expectedUserType && user.user_type !== expectedUserType) {
+      return res.status(403).json({
+        error: 'Wrong account type',
+        message: `This account is registered as a ${user.user_type}. Please use the correct app.`,
+      });
+    }
+
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, phoneNumber, userType: user.user_type },
+      { userId: user.id, phoneNumber: formattedPhone, userType: user.user_type },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -318,8 +341,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         name: profile?.name,
-        phone: phoneNumber,
-        phoneNumber,
+        phone: formattedPhone,
+        phoneNumber: formattedPhone,
         userType: user.user_type,
         is_activated: user.user_type === 'driver' ? (profile?.is_activated || false) : true,
         profile,

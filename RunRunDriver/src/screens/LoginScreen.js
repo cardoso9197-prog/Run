@@ -20,7 +20,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     
     try {
-      const response = await authAPI.login({ phone: formattedPhone, password }).catch(err => {
+      const response = await authAPI.login({ phone: formattedPhone, password, userType: 'driver' }).catch(err => {
         console.error('Login API Error:', err);
         throw err;
       });

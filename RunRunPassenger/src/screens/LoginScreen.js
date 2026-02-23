@@ -34,6 +34,7 @@ export default function LoginScreen({ navigation }) {
       const response = await authAPI.login({
         phone: formattedPhone,
         password,
+        userType: 'passenger',
       });
 
       if (response && response.data && response.data.token) {

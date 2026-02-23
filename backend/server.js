@@ -954,8 +954,30 @@ server.on('error', (error) => {
   process.exit(1);
 });
 
+async function ensureUserTypes() {
+  try {
+    console.log('🔧 Checking user_type consistency...');
+    // Fix users who have a passengers record but wrong/null user_type
+    await pool.query(`
+      UPDATE users SET user_type = 'passenger'
+      WHERE id IN (SELECT user_id FROM passengers)
+        AND (user_type IS NULL OR user_type NOT IN ('passenger', 'driver'));
+    `);
+    // Fix users who have a drivers record but wrong/null user_type
+    await pool.query(`
+      UPDATE users SET user_type = 'driver'
+      WHERE id IN (SELECT user_id FROM drivers)
+        AND (user_type IS NULL OR user_type NOT IN ('passenger', 'driver'));
+    `);
+    console.log('✅ User type consistency check complete');
+  } catch (error) {
+    console.error('⚠️ User type migration error:', error.message);
+    // Non-fatal
+  }
+}
+
 // Run migrations and start server
-ensureRidesSchema().then(() => ensurePaymentMethodsTable()).then(() => {
+ensureRidesSchema().then(() => ensurePaymentMethodsTable()).then(() => ensureUserTypes()).then(() => {
   server.listen(PORT, HOST, () => {
     console.log('\nðŸš€ =============================================');
     console.log(`ðŸš— Run Run Backend Server`);
