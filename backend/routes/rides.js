@@ -270,7 +270,12 @@ router.post('/request', requirePassenger, async (req, res) => {
           AND d.push_token IS NOT NULL
       `);
 
-      console.log(`🔍 Found ${nearbyDriversResult.rows.length} online drivers with push tokens`);
+      // Also log all online drivers for debugging (even without token)
+      const allOnlineDrivers = await query(
+        `SELECT id, status, is_activated, push_token IS NOT NULL as has_token FROM drivers WHERE status = 'online'`
+      );
+      console.log(`🔍 All online drivers: ${JSON.stringify(allOnlineDrivers.rows)}`);
+      console.log(`🔍 Found ${nearbyDriversResult.rows.length} online activated drivers with push tokens`);
 
       if (nearbyDriversResult.rows.length > 0) {
         // Separate drivers with and without GPS

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 import './src/i18n/i18n';
 import notificationService from './src/services/notificationService';
 
@@ -63,14 +64,32 @@ export default function App() {
       // Setup listeners for notifications
       notificationService.setupNotificationListeners(
         (notification) => {
-          // Handle notification received while app is in foreground
-          console.log('📬 New notification received:', notification);
+          // Handle notification received while app is in FOREGROUND
+          console.log('📬 New notification received in foreground:', notification);
+          const data = notification.request.content.data;
+          if (data?.type === 'new_ride') {
+            // Show alert and offer to navigate to AvailableRides
+            Alert.alert(
+              '� New Ride Request!',
+              notification.request.content.body || 'A passenger is waiting. Go to Available Rides to accept.',
+              [
+                { text: 'Ignore', style: 'cancel' },
+                {
+                  text: 'View Ride',
+                  onPress: () => {
+                    if (navigationRef.current) {
+                      navigationRef.current.navigate('AvailableRides');
+                    }
+                  },
+                },
+              ],
+              { sound: true }
+            );
+          }
         },
         (data) => {
-          // Handle notification tapped
+          // Handle notification tapped (app in background/killed)
           console.log('👆 Notification tapped:', data);
-          
-          // Navigate to AvailableRides screen when notification is tapped
           if (data.type === 'new_ride' && navigationRef.current) {
             navigationRef.current.navigate('AvailableRides');
           }

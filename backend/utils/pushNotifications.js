@@ -16,9 +16,14 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
  */
 async function sendPushNotification(pushToken, title, body, data = {}) {
   try {
-    if (!pushToken || !pushToken.startsWith('ExponentPushToken[')) {
-      console.error('Invalid push token:', pushToken);
-      return { success: false, error: 'Invalid push token' };
+    if (!pushToken) {
+      console.error('❌ Push token is null/undefined');
+      return { success: false, error: 'No push token' };
+    }
+
+    if (!pushToken.startsWith('ExponentPushToken[')) {
+      console.error('❌ Invalid push token format:', pushToken);
+      return { success: false, error: 'Invalid push token format' };
     }
 
     const message = {
@@ -34,10 +39,17 @@ async function sendPushNotification(pushToken, title, body, data = {}) {
     const response = await axios.post(EXPO_PUSH_URL, message, {
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
-    console.log('✅ Push notification sent:', response.data);
+    const result = response.data?.data;
+    if (result?.status === 'error') {
+      console.error('❌ Expo push error for token', pushToken, ':', result.message, result.details);
+      return { success: false, error: result.message };
+    }
+
+    console.log('✅ Push notification sent to', pushToken);
     return { success: true, data: response.data };
   } catch (error) {
     console.error('❌ Error sending push notification:', error.response?.data || error.message);
@@ -64,17 +76,32 @@ async function sendBatchPushNotifications(messages) {
       }));
 
     if (validMessages.length === 0) {
-      console.log('No valid push tokens to send notifications');
+      console.log('❌ No valid ExponentPushToken[] tokens found in batch');
+      console.log('Attempted tokens:', messages.map(m => m.pushToken));
       return { success: false, error: 'No valid tokens' };
     }
+
+    console.log(`📤 Sending batch to ${validMessages.length} tokens:`, validMessages.map(m => m.to));
 
     const response = await axios.post(EXPO_PUSH_URL, validMessages, {
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
-    console.log(`✅ Batch push notifications sent: ${validMessages.length} messages`);
+    // Log per-ticket results from Expo
+    const tickets = response.data?.data || [];
+    tickets.forEach((ticket, i) => {
+      if (ticket.status === 'error') {
+        console.error(`❌ Push failed for token ${validMessages[i]?.to}:`, ticket.message, ticket.details);
+      } else {
+        console.log(`✅ Push queued for token ${validMessages[i]?.to}, ticketId: ${ticket.id}`);
+      }
+    });
+
+    const successCount = tickets.filter(t => t.status === 'ok').length;
+    console.log(`✅ Batch push: ${successCount}/${validMessages.length} queued successfully`);
     return { success: true, data: response.data };
   } catch (error) {
     console.error('❌ Error sending batch push notifications:', error.response?.data || error.message);
@@ -88,21 +115,17 @@ async function sendBatchPushNotifications(messages) {
  * @param {array} nearbyDrivers - Array of driver objects with push_token
  */
 async function notifyDriversAboutNewRide(ride, nearbyDrivers) {
-  const vehicleIcon = ride.vehicle_type === 'Moto' ? '🏍️' : ride.vehicle_type === 'Premium' ? '🚙' : '🚗';
-  const vehicleLabel = ride.vehicle_type || 'Normal';
-
   const messages = nearbyDrivers
     .filter(driver => driver.push_token)
     .map(driver => ({
       pushToken: driver.push_token,
-      title: driver._overrideTitle || `${vehicleIcon} New ${vehicleLabel} Ride Request!`,
+      title: driver._overrideTitle || '🚗 New Ride Request!',
       body: driver._overrideBody || `${Math.round(ride.estimated_fare || 0).toLocaleString()} XOF • ${(ride.distanceToPickup || 0).toFixed(1)} km away`,
       data: {
         type: driver._overrideTitle ? 'ride_cancelled' : 'new_ride',
         rideId: ride.id,
         fare: ride.estimated_fare,
         distance: ride.distanceToPickup,
-        vehicleType: ride.vehicle_type,
         pickupAddress: ride.pickup_address,
         dropoffAddress: ride.dropoff_address,
       },

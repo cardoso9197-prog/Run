@@ -85,6 +85,19 @@ export default function HomeScreen({ navigation }) {
       console.log('Status update response:', response.data);
       
       setIsOnline(newStatus);
+
+      // Re-register push token every time driver goes ONLINE to ensure it's current
+      if (newStatus) {
+        notificationService.registerForPushNotifications()
+          .then(token => {
+            if (token) {
+              console.log('🔔 Re-sending push token on going online:', token);
+              return notificationService.sendTokenToBackend(token);
+            }
+          })
+          .catch(err => console.log('Push re-register error:', err));
+      }
+
       Alert.alert('Success', `You are now ${statusValue}`);
     } catch (error) {
       console.error('Toggle online error:', error);
